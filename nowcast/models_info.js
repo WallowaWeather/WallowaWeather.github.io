@@ -155,6 +155,7 @@ export const GLYPHS = {
   gauge: ['M3.8 17.5a9 9 0 1 1 16.4 0', 'M12 13.5l4.2-4.7', 'M10.6 13.5a1.4 1.4 0 1 0 2.8 0a1.4 1.4 0 1 0-2.8 0'],   // SPEED TUNE (Settings row)
   flag: ['M5.5 21V3.5', 'M5.5 4h12l-3 4.5 3 4.5h-12'],   // FIELD REPORT (fieldkit): Settings › Field report
   refresh: ['M19.5 10.5A7.8 7.8 0 0 0 5.6 7.4L4.5 9', 'M4.5 4.5V9H9', 'M4.5 13.5a7.8 7.8 0 0 0 13.9 3.1l1.1-1.6', 'M19.5 19.5V15H15'],   // Nov-08: Keep forecasts fresh
+  share: ['M12 3.5v11', 'M8 7.5l4-4 4 4', 'M7.5 11H5.5v9.5h13V11h-2'],   // 1.0.2: Settings › Share the app
   download: ['M12 4v10.5', 'M7.5 10 12 14.5l4.5-4.5', 'M5 19.5h14'],   // LANDING: Settings › Download all
   gauge: ['M4.6 18A8.5 8.5 0 1 1 19.4 18', 'M12 14.5l4-5', 'M12 14.5h.01', 'M7 13.5h1.5M15.5 13.5H17M12 7.5V9'],   // BENCH TEST: Settings › Bench test
 };

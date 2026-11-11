@@ -16,8 +16,9 @@ import { BEAM_SIZE_MB } from './nowcast/models_info.js';   // v008
 import { beamModel } from './nowcast/beam_live.js';   // v009: BEAM live on this phone
 import { COUNTIES, countyAt } from './nowcast/counties.js';   // v014: the app's counties (Wallowa first; the others are simply there)
 import { speedTuneHooks } from './nowcast/tune/ui.js';   // SPEED TUNE: Settings > Speed tune
+import { shareInto } from './share.js';   // 1.0.2: Settings › Share the app
 
-export const VERSION = 'Wallowa Weather 1.0.1';
+export const VERSION = 'Wallowa Weather 1.0.2';
 // the app's area: Wallowa County (its name, box and home: the town of Wallowa); v014: it forecasts, searches and runs nowcasts inside any of its counties
 const AREA = { app: 'Wallowa Weather', name: COUNTIES[0].name, bbox: COUNTIES[0].bbox, home: COUNTIES[0].home, counties: COUNTIES, countyAt,
   contains(lat, lon) { return !!countyAt(lat, lon); } };
@@ -150,6 +151,9 @@ function diagInto(el) {
   const c = mk('button', 'btn sm', 'Copy'); c.type = 'button'; c.onclick = async () => { try { await navigator.clipboard.writeText(pre.textContent); toast('Copied.'); } catch (e) { toast('Copy did not work: select the text instead.'); } }; el.append(c);
   if (navigator.share) { const s = mk('button', 'btn sm', 'Share'); s.type = 'button'; s.onclick = () => navigator.share({ title: 'Wallowa Weather diagnostics', text: pre.textContent }).catch(() => {}); el.append(s); }   // FIELD TEST: Settings › Diagnostics › Share
 }
+/** 1.0.2: Settings › Share the app (share.js): the app's address as a QR code a friend scans. Only offered when config.js names a public
+ *  address, so a test server never hands out its own */
+const PUBLIC_URL = (() => { try { const u = window.P0_CONFIG && window.P0_CONFIG.publicUrl; return typeof u === 'string' && /^https:\/\//.test(u) ? u : ''; } catch (e) { return ''; } })();
 /** FIELD REPORT (fieldkit): the device facts a report carries, with no request: the GPU as StormScope's engine saw it, its last f16 rounding */
 function fieldDevice() {
   let c = null; try { c = SS && SS.capabilities ? SS.capabilities() : null; } catch (e) { c = null; }
@@ -164,6 +168,7 @@ const SETTINGS = {
     dgmr: { status: () => stOf('dgmr'), size: () => stOf('dgmr').bytes, download: () => download('dgmr'), del: () => deleteModel('dgmr') } },
   installGuide: (el) => renderGuide(el, { onDone: () => {} }),
   downloadAll: { sub: () => DLALL.sub(), build: (el) => DLALL.build(el) },   // LANDING: Settings › Download all (v019: the models and the county map)
+  share: PUBLIC_URL ? { build: (el) => shareInto(el, { url: PUBLIC_URL, toast }) } : null,   // 1.0.2: Settings › Share the app
   diagnostics: diagInto,
   device: fieldDevice,   // FIELD REPORT (fieldkit)
   about: ['Experimental. For warnings, follow the National Weather Service. The app\'s own alert areas (hatched) are not official warnings; NWS warnings are the lined boxes. Yellow: a strong storm on the radar is heading this way (where it could go in the next 90 minutes). Red: StormScope forecasts a damaging storm core within 30 minutes. Orange: possible hail later.',

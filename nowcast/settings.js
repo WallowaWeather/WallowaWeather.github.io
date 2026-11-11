@@ -67,6 +67,7 @@ export function buildSettings(body, hooks = {}, { doc = document, models = MODEL
   TITLES.tune = 'Speed tune';   // SPEED TUNE (nowcast/tune/ui.js): hooks.tune = { sub, value(), build(el) }
   TITLES.dlall = 'Download all';   // LANDING: hooks.downloadAll = { sub() -> words, build(el) } (dlall.js, the first-run bubble again; v019: models + county map)
   TITLES.bench = 'Bench test';   // BENCH TEST: hooks.bench(el) fills the page (view.js -> bench.js)
+  TITLES.share = 'Share the app';   // 1.0.2: hooks.share = { build(el) }, the app's address as a QR code a friend scans
   const titleOf = (e) => (e.page === 'model' ? (modelById(e.arg) || {}).name || 'Model' : TITLES[e.page] || 'Settings');
   const scroller = () => (body.closest ? body.closest('.nc-sheet-box') : null) || body.parentElement || null;
 
@@ -127,6 +128,7 @@ export function buildSettings(body, hooks = {}, { doc = document, models = MODEL
       if (typeof hooks.fieldReport === 'function') row(group('Field test'), { go: 'report', ic: 'flag', title: 'Field report', sub: 'Share what the weather is doing where you are' });   // FIELD REPORT (fieldkit)
       if (hooks.fresh) row(group('Data'), { go: 'fresh', ic: 'refresh', title: 'Keep forecasts fresh', sub: hooks.fresh.sub || '', value: call(hooks.fresh.value) || '' });   // Nov-08
       const a = group('This app');
+      if (hooks.share) row(a, { go: 'share', ic: 'share', title: 'Share the app', sub: 'A code a friend scans with their camera' });   // 1.0.2
       if (hooks.counties) row(a, { go: 'counties', ic: 'map', title: 'Counties', sub: 'Keep a county’s maps on this phone' });   // v014
       if (hooks.tune) row(a, { go: 'tune', ic: 'gauge', title: 'Speed tune', sub: hooks.tune.sub || '', value: call(hooks.tune.value) || '' });   // SPEED TUNE
       row(a, { go: 'credits', ic: 'map', title: 'Map data and credits', sub: 'Where the maps, data and models come from' });
@@ -270,6 +272,11 @@ export function buildSettings(body, hooks = {}, { doc = document, models = MODEL
       head('Diagnostics');
       const box = mk('div', 'st-diag'); root.append(box);
       if (typeof hooks.diagnostics === 'function') call(hooks.diagnostics, box);
+    },
+    share() {   // 1.0.2: the QR code, the address, Share and Copy (ww.js draws it)
+      head('Share the app');
+      const box = mk('div', 'st-share'); root.append(box);
+      if (hooks.share) call(hooks.share.build, box); else box.append(mk('p', 'st-note', 'Not available here.'));
     },
     dlall() {   // LANDING: the three models in one go, v019: then the county map (dlall.js draws it; its own progress, so no poll here)
       head('Download all');
