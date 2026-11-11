@@ -1,0 +1,7 @@
+# never committed or published
+.env
+.env.*
+*.log
+node_modules/
+__pycache__/
+_site/

@@ -1,0 +1,95 @@
+/* nowcast/settings.css - the Settings sheet (settings.js): grouped rows, a page per model, Back. Lives inside the map's sheet
+   (.nc-sheet-box, whose X sits top-right), on the app's tokens (app.css), light and dark. Model tints come from modelpick.css. */
+.st-gear .st-gear-ic { width: 22px; height: 22px; }
+.st { display: flex; flex-direction: column; }
+.st [hidden] { display: none !important; }
+.st-h { margin: 0 44px 12px 0; font-size: 22px; line-height: 28px; font-weight: 700; letter-spacing: -.01em; }
+.st-back { align-self: flex-start; display: inline-flex; align-items: center; gap: 2px; min-height: 36px; margin: -8px 0 8px -8px; padding: 0 10px 0 4px; border: 0;
+  border-radius: var(--r-pill, 999px); background: none; color: var(--accent); font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; }
+.st-back .st-gl { width: 18px; height: 18px; stroke-width: 2.2; }
+.st-back:active { background: var(--accent-soft); }
+
+/* the list */
+.st .st-gt { margin: 16px 4px 6px; font-size: 13px; line-height: 18px; font-weight: 600; color: var(--text-2); }
+.st-group { display: flex; flex-direction: column; border-radius: var(--r-sm, 12px); background: var(--surface-2); overflow: hidden; }
+.st-row { position: relative; display: grid; grid-template-columns: 36px minmax(0, 1fr) auto 16px; align-items: center; gap: 12px; width: 100%; min-height: 60px;
+  padding: 10px 12px; border: 0; background: none; color: var(--text-1); text-align: left; font: inherit; cursor: pointer; }
+.st-row + .st-row::before { content: ""; position: absolute; left: 60px; right: 0; top: 0; height: 1px; background: var(--hairline-2); }
+.st-row:active { background: var(--surface-3); }
+.st-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: var(--r-sm, 12px); }
+.st-tile { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; color: var(--mp-tint, var(--accent));
+  background: color-mix(in srgb, var(--mp-tint, var(--accent)) 16%, transparent); }
+.st-tile.st-tile-plain { color: var(--text-2); background: var(--surface-3); }
+.st-tile.st-tile-lg { width: 52px; height: 52px; border-radius: 14px; flex: none; }
+.st-tile .st-ic { width: 20px; height: 20px; }
+.st-tile.st-tile-lg .st-ic { width: 28px; height: 28px; }
+.st-row-t { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.st-row-n { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 16px; line-height: 21px; }
+.st-row-n b { font-weight: 600; }
+.st-row-sub { font-size: 13px; line-height: 17px; color: var(--text-2); }
+.st-badge { flex: none; padding: 0 7px; border-radius: var(--r-pill, 999px); font-size: 11px; line-height: 17px; font-weight: 600; color: var(--accent); background: var(--accent-soft); }
+.st-val { max-width: 110px; font-size: 12.5px; line-height: 16px; color: var(--text-2); text-align: right; }
+.st-val.st-k-ready { color: var(--ok); }
+.st-val.st-k-examples { color: var(--mp-beam, #F2A93B); }
+.st-val.st-k-busy { color: var(--accent); }
+.st-val.st-k-error { color: var(--danger); }
+.st-chev { width: 16px; height: 16px; color: var(--text-3); stroke-width: 2.2; }
+.st .st-note { margin: 10px 0 0; font-size: 13px; line-height: 18px; color: var(--text-2); }
+.st[data-page="main"] .st-note { margin-left: 4px; margin-right: 4px; }   /* in line with the group titles */
+.st .st-note.st-tight { margin: 0 0 6px; }
+
+/* a model's page */
+.st-mhead { display: flex; align-items: center; gap: 12px; margin: 0 44px 10px 0; }
+.st-mhead .st-h { margin: 0; }
+.st-mhead-t { min-width: 0; }
+.st .st-maker { margin: 2px 0 0; font-size: 13px; line-height: 18px; color: var(--text-2); }
+.st .st-exp { align-self: flex-start; margin: 0 0 10px; padding: 3px 10px; border-radius: var(--r-pill, 999px); font-size: 12.5px; line-height: 18px; font-weight: 600;
+  color: var(--warn); background: color-mix(in srgb, var(--warn) 14%, transparent); }
+.st .st-what, .st .st-p { margin: 0 0 12px; font-size: 15px; line-height: 21px; }
+.st .st-p.st-strong { font-weight: 600; }
+.st-card { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: var(--r-sm, 12px); background: var(--surface-2); margin-bottom: 4px; }
+.st .st-stat { margin: 0; font-size: 15px; line-height: 20px; font-weight: 600; }
+.st .st-stat.st-k-ready { color: var(--ok); }
+.st .st-stat.st-k-examples { color: var(--text-1); font-weight: 500; }
+.st .st-stat.st-k-error { color: var(--danger); font-weight: 500; }
+.st-bar { height: 6px; border-radius: 3px; background: var(--surface-3); overflow: hidden; }
+.st-bar i { display: block; height: 100%; background: var(--accent); transform-origin: left; transform: scaleX(0); transition: transform var(--d-3, 240ms) linear; }
+.st-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.st-btns .nc-btn { flex: 1 1 140px; }
+.st .st-confirm { flex-basis: 100%; margin: 0 0 2px; font-size: 15px; line-height: 21px; }
+.st-btns .st-danger { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
+.st-btns .st-danger-solid { background: var(--danger); color: #fff; }
+.st .st-msg { margin: 0; font-size: 13px; line-height: 18px; color: var(--danger); }
+.st-sub { margin: 18px 0 8px; font-size: 15px; line-height: 20px; font-weight: 700; }
+.st-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.st-list li { position: relative; padding-left: 22px; font-size: 15px; line-height: 21px; text-wrap: pretty; }
+.st .st-what, .st .st-p, .st .st-stat, .st .st-note { text-wrap: pretty; }
+.st-list li::before { position: absolute; left: 0; top: 2px; width: 16px; height: 16px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 13px; line-height: 16px; font-weight: 700; text-align: center; }
+.st-list.st-plus li::before { content: "+"; color: var(--ok); background: color-mix(in srgb, var(--ok) 16%, transparent); }
+.st-list.st-minus li::before { content: "\2212"; color: var(--warn); background: color-mix(in srgb, var(--warn) 16%, transparent); }
+.st-kv { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 6px 12px; margin: 0; font-size: 14px; line-height: 19px; }
+.st-kv dt { color: var(--text-2); }
+.st-kv dd { margin: 0; }
+.st-extra { margin-top: 10px; }
+.st .st-lic { margin: 0 0 4px; font-size: 15px; line-height: 22px; }
+.st-link { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+
+/* v014: Counties - each county's saved map and its switch */
+.st-card.st-county { margin-bottom: 10px; }
+.st .st-cname { font-size: 16px; line-height: 21px; font-weight: 600; }
+.st .st-cstat { margin: -4px 0 0; font-size: 13px; line-height: 18px; color: var(--text-2); text-wrap: pretty; }
+.st .st-cstat.st-k-ready { color: var(--ok); }
+.st-sw { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 36px; font-size: 15px; line-height: 20px; cursor: pointer; }
+.st-sw input { flex: none; width: 22px; height: 22px; margin: 0; accent-color: var(--accent); }
+
+/* moved pages */
+.st-credits .credits-h { margin: 16px 0 6px; font-size: 15px; line-height: 20px; font-weight: 700; }
+.st-credits .credits-item { margin: 0 0 8px; }
+.st-credits a { color: var(--accent); }
+.st-install .ww-h { margin: 0 44px 10px 0; font-size: 22px; line-height: 28px; }
+.st-install .ww-steps { margin: 0 0 10px; }
+.st-install .ww-row { margin-top: 10px; }
+.st-diag .ww-diag { margin: 0 0 10px; }
+
+@media (prefers-reduced-motion: reduce) { .st-bar i { transition: none; } }

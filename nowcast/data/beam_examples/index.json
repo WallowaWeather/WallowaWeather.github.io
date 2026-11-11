@@ -1,0 +1,50 @@
+{
+ "made": "2026-11-08T22:32:40+00:00",
+ "examples": [
+  {
+   "id": "beam-2022-08-11",
+   "date": "2022-08-11",
+   "focus": "2022-08-11T21:30Z",
+   "frames": 13,
+   "verifiedCells": 0,
+   "kb": 1086,
+   "chosen": "reported",
+   "title": "Aug 11, 2022 \u00b7 the Wallowa hailstorm",
+   "when": "2:40 PM PDT",
+   "motion": "27 mph toward the north"
+  },
+  {
+   "id": "beam-2021-06-03",
+   "date": "2021-06-03",
+   "focus": "2021-06-04T01:20Z",
+   "frames": 13,
+   "verifiedCells": 1,
+   "kb": 696,
+   "title": "Jun 3, 2021 \u00b7 storm 11 mi south of Halfway",
+   "when": "6:30 PM PDT",
+   "motion": "18 mph toward the northeast"
+  },
+  {
+   "id": "beam-2026-07-23",
+   "date": "2026-07-23",
+   "focus": "2026-07-24T00:20Z",
+   "frames": 13,
+   "verifiedCells": 1,
+   "kb": 1056,
+   "title": "Jul 23, 2026 \u00b7 storm 28 mi northeast of Imnaha",
+   "when": "5:30 PM PDT",
+   "motion": "35 mph toward the northeast"
+  },
+  {
+   "id": "beam-2025-07-31",
+   "date": "2025-07-31",
+   "focus": "2025-08-01T01:00Z",
+   "frames": 13,
+   "verifiedCells": 1,
+   "kb": 1079,
+   "title": "Jul 31, 2025 \u00b7 storm 8 mi north of Wallowa",
+   "when": "6:10 PM PDT",
+   "motion": "18 mph toward the north"
+  }
+ ]
+}

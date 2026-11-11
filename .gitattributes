@@ -1,0 +1,2 @@
+# No line-ending conversion anywhere: sw.js's BUILD (tools/check_sw.py) hashes the files' bytes, so a checkout must not change them.
+* -text

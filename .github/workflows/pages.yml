@@ -1,0 +1,63 @@
+# Publishes Wallowa Weather to GitHub Pages (the account's own site: https://wallowaweather.github.io/).
+# Repository Settings > Pages > Build and deployment > Source = "GitHub Actions".
+# The site is the repository root as plain static files (no build step), minus the developer tools, docs/ (the README's
+# screenshots) and this workflow.
+# The model packs are not here: the phone downloads them from Hugging Face at pinned revisions (config.js).
+# Actions are pinned to the commit of their release.
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The deploy stops here when a model pack is not on a pinned Hugging Face revision, when sw.js's offline list (FILES, BUILD)
+      # does not match the files that ship, or when a key, token or local test-server path would ship. The full scan with the
+      # maintainer's private word list runs before every export and is never in this repository.
+      - name: Release checks
+        run: |
+          python3 tools/check_packs.py
+          python3 tools/check_sw.py
+          python3 tools/scan_secrets.py --binaries --deny 're:/apps/[0-9a-f]{10}/'   # scan-secrets: allow=deny
+
+      - name: Configure Pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+
+      # Only the repository's own top-level folders stay out (anchored with "/": a bare 'tools' would also drop any nested folder
+      # named tools that sw.js lists, and the offline store would fail to install); then sw.js is checked against what is uploaded.
+      - name: Collect the site files
+        run: |
+          mkdir -p _site
+          rsync -a --exclude '.git' --exclude '/.github' --exclude '/tools' --exclude '/docs' --exclude '/_site' ./ _site/
+          test -f _site/index.html && test -f _site/.nojekyll && test ! -e _site/tools && test ! -e _site/docs
+          python3 tools/check_sw.py _site
+
+      - name: Upload the site
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: _site
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

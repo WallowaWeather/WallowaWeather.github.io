@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' blob: data:; worker-src 'self'; manifest-src 'self'; font-src 'self'; connect-src 'self' https://huggingface.co/JoshHughes/ https://*.hf.co https://api.weather.gov https://noaa-mrms-pds.s3.amazonaws.com https://noaa-goes19.s3.amazonaws.com https://noaa-goes18.s3.amazonaws.com https://noaa-goes16.s3.amazonaws.com https://noaa-hrrr-bdp-pds.s3.amazonaws.com https://gibs.earthdata.nasa.gov https://basemap.nationalmap.gov https://carto.nationalmap.gov https://imagery.oregonexplorer.info https://services8.arcgis.com/IMdJDKFYUN1k5T2P/arcgis/rest/services/Taxlots_Public/FeatureServer/ https://api.waterdata.usgs.gov https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Incident_Locations_Current/FeatureServer/ https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Interagency_Perimeters_Current/FeatureServer/ https://gis.co.douglas.or.us/server/rest/services/Parcel/ORMAP_Parcels/MapServer/; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#0B1620">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Wallowa Wx">
+<meta name="description" content="Wallowa Weather: the next 90 minutes of storms for Wallowa County, Oregon, worked out on your own device.">
+<title>Wallowa Weather</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">
+<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="nowcast/nowcast.css">
+<link rel="stylesheet" href="nowcast/beam.css">
+<link rel="stylesheet" href="nowcast/modelpick.css">
+<link rel="stylesheet" href="nowcast/settings.css">
+<link rel="stylesheet" href="nowcast/affected.css">
+<link rel="stylesheet" href="nowcast/mine.css">
+<link rel="stylesheet" href="nowcast/presets.css">
+<link rel="stylesheet" href="ww.css">
+<link rel="stylesheet" href="landing.css"><!-- LANDING: first run (landing.js, dlall.js) + the copyright bar -->
+<script src="config.js"></script>
+<script type="module" src="ww.js"></script>
+</head>
+<body class="ww">
+<main id="ww-main">
+  <section id="v-nowcast" class="screen ww-screen" aria-label="Wallowa Weather map"></section>
+</main>
+<div id="ww-sheet" class="ww-sheet" hidden><div id="ww-sheet-box" class="ww-sheet-box" role="dialog" aria-label="Menu"></div></div>
+<div id="ww-toast" class="ww-toast" role="status" hidden></div>
+<div id="ww-upright" class="ww-upright" role="status">Turn your phone upright: Wallowa Weather works held upright.</div>
+</body>
+</html>

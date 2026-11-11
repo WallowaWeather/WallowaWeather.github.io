@@ -1,0 +1,17 @@
+BEAM (Blended Early-warning Alert Model)
+Copyright 2026 Joshua Hughes
+
+BEAM was created by artist Josh Hughes as a public-good project: the chance of lightning, hail, cloudbursts and strong
+storm cores for the next 90 minutes, worked out on a phone from NOAA radar, GOES-West satellite and lightning data and
+the HRRR model.
+
+Licensed under the Apache License, Version 2.0 (licenses/Apache-2.0.txt). You may not use these files except in
+compliance with the License. Unless required by applicable law or agreed to in writing, BEAM is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+specific language governing permissions and limitations under the License.
+
+Any redistribution of BEAM, or of a work derived from it, must include this NOTICE file (Apache License 2.0,
+section 4(d)), crediting Josh Hughes as BEAM's creator.
+
+BEAM's forecasts are experimental and are not official warnings. Follow the National Weather Service and local
+authorities.

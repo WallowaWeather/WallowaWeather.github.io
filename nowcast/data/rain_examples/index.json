@@ -1,0 +1,101 @@
+{
+ "examples": [
+  {
+   "id": "dgmr-2022-08-11",
+   "model": "dgmr",
+   "date": "2022-08-11",
+   "title": "Aug 11, 2022 \u00b7 the Wallowa hailstorm",
+   "when": "2:40 PM PDT",
+   "place": "Wallowa",
+   "chosen": "reported",
+   "frames": 18,
+   "kb": 537,
+   "forecast": true
+  },
+  {
+   "id": "dgmr-2021-06-03",
+   "model": "dgmr",
+   "date": "2021-06-03",
+   "title": "Jun 3, 2021 \u00b7 storm 11 mi south of Halfway",
+   "when": "6:30 PM PDT",
+   "place": "Imnaha",
+   "chosen": "beam",
+   "frames": 18,
+   "kb": 233,
+   "forecast": true
+  },
+  {
+   "id": "dgmr-2025-07-31",
+   "model": "dgmr",
+   "date": "2025-07-31",
+   "title": "Jul 31, 2025 \u00b7 storm 8 mi north of Wallowa",
+   "when": "6:10 PM PDT",
+   "place": "Wallowa",
+   "chosen": "beam",
+   "frames": 18,
+   "kb": 493,
+   "forecast": true
+  },
+  {
+   "id": "dgmr-2026-07-23",
+   "model": "dgmr",
+   "date": "2026-07-23",
+   "title": "Jul 23, 2026 \u00b7 storm 28 mi northeast of Imnaha",
+   "when": "5:30 PM PDT",
+   "place": "Imnaha",
+   "chosen": "beam",
+   "frames": 18,
+   "kb": 435,
+   "forecast": true
+  },
+  {
+   "id": "stormscope-2022-08-11",
+   "model": "stormscope",
+   "date": "2022-08-11",
+   "title": "Aug 11, 2022 \u00b7 the Wallowa hailstorm",
+   "when": "2:40 PM PDT",
+   "place": "Wallowa",
+   "chosen": "reported",
+   "frames": 9,
+   "kb": 200,
+   "forecast": true
+  },
+  {
+   "id": "stormscope-2021-06-03",
+   "model": "stormscope",
+   "date": "2021-06-03",
+   "title": "Jun 3, 2021 \u00b7 storm 11 mi south of Halfway",
+   "when": "6:30 PM PDT",
+   "place": "Imnaha",
+   "chosen": "beam",
+   "frames": 9,
+   "kb": 140,
+   "forecast": true
+  },
+  {
+   "id": "stormscope-2025-07-31",
+   "model": "stormscope",
+   "date": "2025-07-31",
+   "title": "Jul 31, 2025 \u00b7 storm 8 mi north of Wallowa",
+   "when": "6:10 PM PDT",
+   "place": "Wallowa",
+   "chosen": "beam",
+   "frames": 9,
+   "kb": 304,
+   "forecast": true
+  },
+  {
+   "id": "stormscope-2026-07-23",
+   "model": "stormscope",
+   "date": "2026-07-23",
+   "title": "Jul 23, 2026 \u00b7 storm 28 mi northeast of Imnaha",
+   "when": "5:30 PM PDT",
+   "place": "Imnaha",
+   "chosen": "beam",
+   "frames": 9,
+   "kb": 142,
+   "forecast": true
+  }
+ ],
+ "made": "2026-11-09T00:11:02+00:00"
+}

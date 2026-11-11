@@ -1,0 +1,31 @@
+/* nowcast/presets.css - Wallowa Weather v008: the preset picker at the top of the Layers sheet (presets.js), and the sheet text of the
+   drainage, gauge, fire and fire-weather taps. Prefix ps-. Colours come from app.css's tokens; each card's own colour is --pc. */
+.ps-pick { margin: 0 0 14px; }
+.ps-title { margin: 0 0 8px; font-size: 13px; line-height: 18px; font-weight: 600; color: var(--text-2); }
+.ps-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+@media (min-width: 640px) { .ps-row { grid-template-columns: repeat(4, 1fr); } }
+.ps-card { --pc: var(--accent); --pc-soft: var(--accent-soft); --pc-ring: var(--accent);
+  position: relative; display: grid; grid-template-columns: 36px 1fr; grid-template-rows: auto 1fr; column-gap: 10px; row-gap: 6px; align-items: center;
+  min-height: 96px; padding: 10px 10px 11px; border: 0; border-radius: var(--r-md, 16px); text-align: left; cursor: pointer;
+  background: var(--surface-2); color: var(--text-1); box-shadow: inset 0 0 0 1px var(--hairline-2, rgba(127,127,127,.2)); font: inherit;
+  transition: background var(--d-2, 160ms) linear, box-shadow var(--d-2, 160ms) linear; -webkit-tap-highlight-color: transparent; }
+.ps-card:active { transform: scale(.985); }
+.ps-card:focus-visible { outline: 2px solid var(--pc); outline-offset: 2px; }
+.ps-ic { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; color: var(--pc); background: var(--pc-soft); }
+.ps-label { font-size: 15px; line-height: 19px; font-weight: 650; text-wrap: balance; }
+.ps-blurb { grid-column: 1 / -1; align-self: start; font-size: 12.5px; line-height: 16px; color: var(--text-2); }
+.ps-check { position: absolute; top: 8px; right: 8px; width: 20px; height: 20px; border-radius: 50%; display: none; place-items: center; background: var(--pc); color: #fff; }
+.ps-card.on { background: var(--pc-soft); box-shadow: inset 0 0 0 2px var(--pc-ring); }
+.ps-card.on .ps-label { color: var(--text-1); }
+.ps-card.on .ps-check { display: grid; }
+.ps-card.on .ps-ic { background: var(--pc); color: #fff; }
+@media (prefers-reduced-motion: reduce) { .ps-card { transition: none; } .ps-card:active { transform: none; } }
+
+/* the sheet text of a tap (drainage, gauge, fire, fire weather zone): a coloured mark before the title */
+.ps-h { display: flex; align-items: center; gap: 8px; }
+.ps-h::before { content: ''; flex: none; width: 12px; height: 12px; border-radius: 3px; background: var(--ps-c, var(--accent)); }
+.ps-flag { display: inline-block; margin: 0 0 8px; padding: 2px 8px; border-radius: var(--r-pill, 999px); font-size: 13px; line-height: 20px; font-weight: 600;
+  color: #111; background: var(--ps-c, #FFB020); }
+.ps-list { margin: 0 0 10px; padding: 0; list-style: none; display: grid; gap: 6px; }
+.ps-list li { display: flex; gap: 8px; align-items: baseline; font-size: 15px; line-height: 20px; }
+.ps-list li::before { content: ''; flex: none; width: 10px; height: 10px; border-radius: 2px; background: var(--ps-c, #FFB020); transform: translateY(1px); }

@@ -1,0 +1,35 @@
+/* ww.css - Wallowa Weather's own shell: the full-screen map, the menu sheet and the toast (the Nowcast's look comes from nowcast.css) */
+html, body.ww { height: 100%; margin: 0; background: var(--bg); color: var(--text-1); overflow: hidden; }
+/* Android Chrome: no pull-to-refresh (a reload mid-forecast) from a drag at the top; a long press on the map selects nothing */
+html, body.ww { overscroll-behavior: none; }
+body.ww .nc-map { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+#ww-main, .ww-screen { position: fixed; inset: 0; }
+.ww-screen { display: block !important; }
+.ww-sheet { position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,0.45); display: flex; align-items: flex-end; justify-content: center; }
+.ww-sheet[hidden] { display: none; }
+.ww-sheet-box { width: min(560px, 100%); max-height: 86vh; max-height: 86dvh; overflow: auto; overscroll-behavior: contain; background: var(--surface-1); color: var(--text-1); border-radius: 18px 18px 0 0;
+  padding: 16px 16px calc(env(safe-area-inset-bottom, 0px) + 18px); display: flex; flex-direction: column; gap: 10px; }
+@media (min-width: 720px) { .ww-sheet { align-items: center; } .ww-sheet-box { border-radius: 18px; } }
+.ww-h { margin: 4px 0 2px; font-size: 20px; text-wrap: balance; }
+.ww-close { align-self: flex-end; }
+.ww-item { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; padding: 12px; border-radius: 12px; border: 1px solid var(--hairline);
+  background: var(--surface-2); color: var(--text-1); font: inherit; cursor: pointer; }
+.ww-item:focus-visible, .ww-sheet-box .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ww-model { display: grid; gap: 4px; padding: 12px; border-radius: 12px; background: var(--surface-2); }
+.ww-model .btn { justify-self: start; }
+.ww-steps { margin: 0; padding-left: 22px; display: grid; gap: 6px; line-height: 1.4; }
+.ww-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.ww-diag { white-space: pre-wrap; word-break: break-word; font-size: 11px; max-height: 50vh; overflow: auto; background: var(--surface-2); padding: 10px; border-radius: 10px; }
+.ww-toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 96px); z-index: 60; max-width: min(520px, calc(100% - 32px));
+  background: var(--surface-3); color: var(--text-1); padding: 10px 14px; border-radius: 12px; font-size: 14px; box-shadow: 0 6px 24px rgba(0,0,0,0.3); }
+.ww-toast[hidden] { display: none; }
+/* opened inside another site's frame: the app does not start; only a link that opens it on its own (ww.js) */
+.ww-framed { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 24px 16px; text-align: center; font: 16px/1.4 system-ui, sans-serif; }
+.ww-framed a { color: var(--accent, #0A84FF); font-weight: 600; }
+/* Josh, v018: never landscape. The installed app is portrait (manifest); a phone held sideways in the browser gets this notice over
+   the map instead of a layout whose buttons cannot be reached (short screens with a finger: phones, not tablets or desktops) */
+.ww-upright { display: none; }
+@media (orientation: landscape) and (max-height: 540px) and (pointer: coarse) {
+  .ww-upright { display: flex; position: fixed; inset: 0; z-index: 2147483000; align-items: center; justify-content: center; padding: 24px;
+    background: var(--bg); color: var(--text-1); font-size: 18px; line-height: 1.4; text-align: center; }
+}

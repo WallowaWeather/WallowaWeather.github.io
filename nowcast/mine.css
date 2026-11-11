@@ -1,0 +1,97 @@
+/* nowcast/mine.css - "My layers" (mine.js): the see-through touch layer and the bar while drawing, the name + colour form, a shape's
+   sheet, and the rows in the Layers sheet. Every class here starts mn-; the sheets wear nowcast.css's nc-sheet look and app.css's tokens
+   (light and dark). Touch targets 44 px or more. */
+
+/* drawing: the layer that takes the touches, over the map and under its buttons; the card steps aside for the bar */
+.mn-catch { position: absolute; inset: 0; touch-action: none; cursor: crosshair; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.nc.mn-drawing .nc-card { display: none; }
+.mn-bar { position: absolute; left: var(--gutter-l); right: var(--gutter-r); bottom: calc(var(--safe-b) + 30px); z-index: 2; max-width: 520px; margin: 0 auto;
+  padding: 12px 14px; border-radius: var(--r-lg); background: color-mix(in srgb, var(--surface-1) 90%, transparent);
+  -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); box-shadow: 0 6px 28px rgba(0,0,0,.32), inset 0 0 0 1px var(--hairline);
+  touch-action: manipulation; animation: mn-up var(--d-3) var(--ease-out); }
+@keyframes mn-up { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+.mn-bar-head { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.mn-bar-k { flex: 1 1 auto; min-width: 0; font-size: 17px; line-height: 22px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mn-bar-m { flex: none; font-size: 14px; line-height: 18px; color: var(--text-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mn-bar-hint { margin: 4px 0 10px; font-size: 15px; line-height: 20px; color: var(--text-1); }
+.mn-bar-btns { display: flex; gap: 8px; }
+.mn-bar-btns[hidden] { display: none; }
+.mn-bar-btns .nc-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 10px; min-width: 0; }
+.mn-bar-btns .nc-btn:disabled { opacity: .38; }
+.mn-ic { width: 20px; height: 20px; flex: none; }
+.nc-btn.mn-danger { background: var(--danger); color: #fff; }
+
+/* sheets: over the screen's own sheet if both are up */
+.mn-sheet { z-index: 4; }
+.mn-sub { margin-top: -4px !important; }
+.mn-lab { display: block; margin: 6px 0 6px; font-size: 13px; line-height: 18px; font-weight: 600; color: var(--text-2); }
+.mn-name { display: block; }
+.mn-name::placeholder { color: var(--text-3); }
+.mn-swatches { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px 8px; margin: 2px 0 16px; }
+.mn-swatch { display: flex; flex-direction: column; align-items: center; gap: 4px; min-height: 72px; padding: 6px 0 4px; border: 0; border-radius: var(--r-sm);
+  background: none; color: var(--text-2); font: inherit; font-size: 12px; line-height: 14px; cursor: pointer; }
+.mn-disc { position: relative; display: block; width: 44px; height: 44px; border-radius: 50%; background: var(--c);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.22); transition: box-shadow var(--d-2), transform var(--d-2) var(--ease-out); }
+.mn-swatch:active .mn-disc { transform: scale(.92); }
+.mn-swatch[aria-checked="true"] { color: var(--text-1); font-weight: 600; }
+.mn-swatch[aria-checked="true"] .mn-disc { box-shadow: 0 0 0 3px var(--surface-1), 0 0 0 5.5px var(--text-1); }
+/* the tick on the picked one (dark on the light colours) */
+.mn-swatch[aria-checked="true"] .mn-disc::after { content: ""; position: absolute; left: 16px; top: 10px; width: 9px; height: 17px; border: solid #fff; border-width: 0 3px 3px 0; transform: rotate(45deg); }
+.mn-swatch.mn-pale[aria-checked="true"] .mn-disc::after { border-color: #1C1C1E; }
+@media (prefers-color-scheme: light) { .mn-swatch.mn-pale .mn-disc { box-shadow: inset 0 0 0 1px rgba(0,0,0,.28); } .mn-swatch.mn-pale[aria-checked="true"] .mn-disc { box-shadow: 0 0 0 3px var(--surface-1), 0 0 0 5.5px var(--text-1), inset 0 0 0 1px rgba(0,0,0,.28); } }
+.mn-save { width: 100%; }
+.mn-note { margin: 12px 0 0 !important; }
+
+/* a shape's sheet */
+.mn-ih { display: flex; align-items: center; gap: 10px; margin: 0 44px 6px 0; min-width: 0; }
+.mn-ih .nc-h { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.mn-what { margin: 0 0 4px !important; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.mn-acts { display: flex; flex-direction: column; margin: 12px 0 10px; border-radius: var(--r-sm); background: var(--surface-2); overflow: hidden; }
+.mn-acts[hidden] { display: none; }
+.mn-act { min-height: 50px; padding: 0 16px; border: 0; background: none; color: var(--accent); font: inherit; font-size: 16px; text-align: left; cursor: pointer; }
+.mn-act + .mn-act { border-top: 1px solid var(--hairline); }
+.mn-act:active { background: var(--surface-3); }
+.mn-act.danger { color: var(--danger); }
+.mn-confirm { margin: 12px 0 10px; padding: 12px 14px; border-radius: var(--r-sm); background: var(--surface-2); }
+.mn-confirm[hidden] { display: none; }
+.mn-confirm p { margin: 0 0 10px !important; }
+.mn-confirm-btns { display: flex; gap: 8px; }
+
+/* the colour mark of each kind: a dot (pin), a bar (line), a tinted square (area, lot) or ring (circle) */
+.mn-dot { flex: none; display: block; width: 16px; height: 16px; border-radius: 50%; background: var(--c); box-shadow: inset 0 0 0 1px rgba(0,0,0,.25); }
+.mn-dot.mn-k-line { width: 20px; height: 6px; border-radius: 3px; }
+.mn-dot.mn-k-area, .mn-dot.mn-k-lot { width: 18px; height: 18px; border-radius: 5px; background: color-mix(in srgb, var(--c) 34%, transparent); box-shadow: inset 0 0 0 2.5px var(--c); }
+.mn-dot.mn-k-lot { border-radius: 2px; }
+.mn-dot.mn-k-circle { width: 18px; height: 18px; background: color-mix(in srgb, var(--c) 34%, transparent); box-shadow: inset 0 0 0 2.5px var(--c); }
+
+/* the Layers sheet's "My layers" section */
+.mn-section { margin-top: 4px; }
+.mn-empty { margin: 0 0 4px !important; }
+.mn-list { display: flex; flex-direction: column; }
+.mn-row { display: flex; align-items: center; gap: 4px; border-bottom: 1px solid var(--hairline); }
+.mn-row-b { flex: 1 1 auto; min-width: 0; min-height: 54px; display: flex; align-items: center; gap: 12px; padding: 6px 0; border: 0; background: none;
+  color: var(--text-1); font: inherit; text-align: left; cursor: pointer; }
+.mn-mark { flex: none; width: 22px; height: 22px; display: grid; place-items: center; }
+.mn-row-t { display: flex; flex-direction: column; min-width: 0; font-size: 15px; line-height: 20px; }
+.mn-row-t b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mn-row-t .footnote { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.mn-row.off .mn-row-t b { color: var(--text-2); font-weight: 500; }
+.mn-row.off .mn-dot { opacity: .4; }
+.mn-swl { flex: none; width: 44px; height: 44px; display: grid; place-items: center; cursor: pointer; }
+.mn-swl input { width: 22px; height: 22px; margin: 0; accent-color: var(--accent); }
+.mn-draw-row { display: flex; gap: 8px; margin: 12px 0 0; }
+.mn-choose { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 8px; }
+.mn-choose[hidden] { display: none; }
+.mn-kind { min-height: 68px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 0; border-radius: var(--r-sm);
+  background: var(--surface-2); color: var(--text-1); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.mn-kind .mn-ic { width: 26px; height: 26px; color: var(--accent); }
+.mn-kind:active { background: var(--surface-3); }
+.mn-hint { margin: 10px 0 0 !important; }
+.mn-io { display: flex; gap: 8px; margin-top: 10px; }
+.mn-io .nc-btn.sm { flex: 1; min-height: 44px; }
+.mn-io + .footnote { margin-top: 6px !important; }
+
+@media (prefers-reduced-motion: reduce) { .mn-bar { animation: none; } .mn-disc { transition: none; } .mn-swatch:active .mn-disc { transform: none; } }
+
+/* v008 integration: the model chip steps aside while drawing too (the bar takes the card's place) */
+.nc.mn-drawing .mp-dock { display: none; }

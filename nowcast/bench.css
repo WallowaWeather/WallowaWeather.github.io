@@ -1,0 +1,34 @@
+/* nowcast/bench.css - Settings › Bench test (bench.js, loaded with it): the note, the button, the result card with a row a check,
+   inside the map's sheet, on the app's tokens (app.css), light and dark. Phone first: buttons at least 40 px tall, nothing wider than
+   the sheet, numbers in tabular figures. */
+.bt { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.bt [hidden] { display: none !important; }
+.bt .bt-note { margin: 0; font-size: 14px; line-height: 20px; color: var(--text-2); text-wrap: pretty; }
+.bt .bt-go { flex: none; width: 100%; }
+.bt .bt-go:disabled { opacity: .55; }
+.bt-card { display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: var(--r-sm, 12px); background: var(--surface-2); min-width: 0; }
+.bt-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.bt .bt-title { font-size: 16px; line-height: 21px; font-weight: 700; }
+.bt .bt-when { flex: none; font-size: 13px; line-height: 18px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.bt .bt-dev { margin: 0; font-size: 13px; line-height: 18px; color: var(--text-2); overflow-wrap: anywhere; }
+.bt-rows { margin: 4px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; }
+.bt-row { display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: 10px; align-items: start; padding: 9px 0; border-top: 1px solid var(--hairline-2); }
+.bt-row:first-child { border-top: 0; }
+.bt-v { justify-self: start; min-width: 58px; padding: 1px 8px; white-space: nowrap; border-radius: var(--r-pill, 999px); font-size: 12px; line-height: 18px; font-weight: 700; text-align: center;
+  color: var(--text-2); background: var(--surface-3); }
+.bt-pass .bt-v { color: var(--ok); background: color-mix(in srgb, var(--ok) 15%, transparent); }
+.bt-slow .bt-v { color: var(--warn); background: color-mix(in srgb, var(--warn) 15%, transparent); }
+.bt-fail .bt-v { color: var(--danger); background: color-mix(in srgb, var(--danger) 14%, transparent); }
+.bt-row.bt-run .bt-v { color: var(--accent); background: var(--accent-soft); }
+.bt-t { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.bt .bt-n { font-size: 15px; line-height: 20px; font-weight: 600; }
+.bt .bt-l { font-size: 13px; line-height: 18px; color: var(--text-2); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; text-wrap: pretty; }
+.bt-wait .bt-n, .bt-skip .bt-n { color: var(--text-2); }
+.bt-row[data-row="total"] { margin-top: 2px; border-top-width: 2px; }
+.bt .bt-ver { margin: 2px 0 0; font-size: 12.5px; line-height: 17px; color: var(--text-2); }
+.bt-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.bt-btns .nc-btn { flex: 1 1 120px; min-height: 40px; }
+.bt-text summary { min-height: 36px; display: flex; align-items: center; font-size: 14px; font-weight: 600; color: var(--accent); cursor: pointer; }
+.bt .bt-pre { margin: 0; padding: 10px; border-radius: 8px; background: var(--surface-1); color: var(--text-1); font: 12px/17px var(--mono, ui-monospace, Menlo, Consolas, monospace);
+  white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; -webkit-user-select: text; }
+.bt .bt-fine { margin: 0; font-size: 12.5px; line-height: 17px; color: var(--text-2); text-wrap: pretty; }

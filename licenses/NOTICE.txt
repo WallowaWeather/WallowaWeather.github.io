@@ -1,0 +1,27 @@
+Wallowa Weather - notices
+
+StormScope (the default forecast model)
+  Licensed by NVIDIA Corporation under the NVIDIA Open Model License
+  Model: NVIDIA StormScope (GOES + MRMS), https://huggingface.co/nvidia/stormscope-goes-mrms
+  Modified for this app: quantised to 8-bit integers and run as WebGPU kernels; the satellite input is held at its newest image.
+  The agreement: licenses/NVIDIA-Open-Model-License.txt
+
+DGMR (the second forecast model)
+  Copyright 2021 DeepMind Technologies Limited. Licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/).
+  Source: https://github.com/google-deepmind/deepmind-research/tree/master/nowcasting
+  Modified: the weights converted to 16-bit floats (the full model) or quantised to 8-bit integers (the low-memory model), and run as
+  WebGPU kernels.
+
+Code derived from NVIDIA Earth2Studio
+  Copyright (c) 2024-2026 NVIDIA CORPORATION & AFFILIATES. Licensed under the Apache License, Version 2.0 (licenses/Apache-2.0.txt).
+  nowcast/stormscope/prep/{cond,goes,glm,mrms_ss,nn,tile,grid,index}.js and nowcast/stormscope/ss.js re-implement in JavaScript, with
+  changes for a phone, parts of earth2studio/data/goes.py, goes_glm.py, mrms.py, utils/interp.py, models/nn/stormscope_flash.py and
+  models/px/stormscope.py (https://github.com/NVIDIA/earth2studio). Each of those files says so at its top.
+
+Solar-angle arithmetic (nowcast/stormscope/prep/cond.js)
+  Copyright (c) 2016, Rodrigo Caballero (climt), BSD license, via NVIDIA PhysicsNeMo: licenses/BSD-3-Clause-climt.txt
+
+Data and maps: see "Licenses and credits" behind the ? on the forecast card (public data from NOAA, the National Weather Service,
+NASA GIBS, USGS / USDA, the Bureau of Land Management, the USDA Forest Service, NIFC, the Oregon Statewide Imagery Program, the US
+Census Bureau, Wallowa County (its tax lots hosted by Esri ArcGIS), Douglas County and Lane County).
+None of these organisations endorses this app.

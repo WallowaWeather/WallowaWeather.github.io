@@ -1,0 +1,38 @@
+/* nowcast/beam.css - v008: BEAM's chips, switches and cone dots (beam.js, view.js); tokens from app.css. v018 examples: the recorded storms
+   play on the live map's own time bar and folding card (exampleui.js): their old panel, slider and second key are gone. */
+.bm-chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 2px 0 8px; }
+.bm-chip { min-height: 36px; padding: 0 12px; border: 0; border-radius: var(--r-pill); background: var(--surface-3); color: var(--text-1); font: inherit; font-size: 14px; font-weight: 600; }
+.bm-chip.on { background: var(--accent); color: #fff; }
+.bm-later .dim { color: var(--text-3); }
+.bm-row { display: flex; gap: 16px; margin: 0 0 2px; }
+.bm-sw { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; font-size: 14px; color: var(--text-1); }
+.bm-sw input { width: 20px; height: 20px; accent-color: var(--accent); }
+.bm-later { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 0 0 8px; font-size: 12px; color: var(--text-2); }
+.bm-dot { width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0,0,0,.6); }
+.bm-fine { margin: 2px 0 0; font-size: 12px; line-height: 16px; color: var(--text-3); }
+.bm-fine summary { min-height: 32px; display: flex; align-items: center; color: var(--text-2); cursor: pointer; }
+.bm-fine p { margin: 0 0 4px; }
+/* v009: BEAM live in the card (view.js renderBeam): the flags, the hazard chips, Run BEAM now, the 10-minute refresh */
+.bm-live { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.bm-live .bm-chips { margin: 2px 0 0; }
+.bm-live-btns { display: flex; gap: 8px; }
+.bm-live .nc-btn.sm { align-self: flex-start; }
+.bm-flag { margin: 0; font-weight: 600; }
+.bm-flag.pending { border-left-color: #FFC93C; }
+.bm-flag.degraded, .bm-flag.radar-hidden, .bm-flag.hrrr-previous, .bm-flag.hrrr-missing { border-left-color: #FF9F0A; }
+.bm-flag.lightning-gap, .bm-flag.satellite-gap, .bm-flag.radar-gap { border-left-color: var(--text-3); font-weight: 500; }
+.bm-flag.error { border-left-color: #FF3B30; }
+.bm-run { margin: 0; color: var(--text-2); }
+.bm-live .nc-bar { flex: none; margin: 0; }
+.bm-auto { min-height: 32px; }
+.bm-live .bm-fine { margin: 0; }
+.bm-live-btns .nc-btn { padding: 0 12px; font-size: 15px; }
+.nc-card.bm-card { display: flex; flex-direction: column; }
+.nc-card.bm-card .nc-action { order: 1; margin-top: 8px; }
+.bm-live .bm-chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+.bm-live .bm-chip { flex: none; min-height: 34px; padding: 0 11px; font-size: 13px; }
+/* Nov-08: Keep forecasts fresh (cadence.js): the card's line, the Layers row's menu */
+.bm-fresh { flex-wrap: wrap; row-gap: 2px; }
+.bm-fresh .footnote { color: var(--text-2); }
+.bm-fresh-sel { flex: none; min-height: 32px; max-width: 100%; padding: 0 8px; border: 0; border-radius: var(--r-sm); background: var(--surface-2); color: var(--text-1); font: inherit; font-size: 14px; }
+.nc-sw .bm-fresh-sel { max-width: 50%; }

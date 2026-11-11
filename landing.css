@@ -1,0 +1,96 @@
+/* landing.css - Wallowa Weather's first run (landing.js, dlall.js): the landing page in a browser tab (ld-), the download-all bubble and
+   its Settings page (dl-), and the copyright bar under the map (ww-foot). On the app's tokens (app.css), light and dark. */
+:root { --ld-glow: #10263A; --ld-ios: #0A84FF; --ww-foot-h: 22px; }
+@media (prefers-color-scheme: light) { :root { --ld-glow: #DCE8F4; --ld-ios: #007AFF; } }
+
+/* ---------------------------------------------------------------- the landing (a browser tab, before the map) */
+html.ld-on, html.ld-on body { overflow: hidden; }
+.ld { position: fixed; inset: 0; z-index: 70; display: flex; flex-direction: column; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+  color: var(--text-1); background: radial-gradient(130% 55% at 50% 0%, var(--ld-glow) 0%, var(--bg) 72%) var(--bg); }
+.ld-in { flex: 1 0 auto; width: min(480px, 100%); margin: 0 auto; display: flex; flex-direction: column; gap: 18px;
+  padding: calc(var(--safe-t) + 36px) var(--gutter-r) 12px var(--gutter-l); }
+.ld-head { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; }
+.ld-logo { display: block; width: 84px; height: 84px; border-radius: 20px; object-fit: cover; box-shadow: 0 10px 30px rgba(0,0,0,.28), 0 0 0 1px var(--hairline-2); }
+.ld .ld-name { margin: 10px 0 0; font-size: 30px; line-height: 36px; font-weight: 700; letter-spacing: -.02em; }
+.ld-lead { max-width: 30ch; font-size: 17px; line-height: 23px; color: var(--text-2); text-wrap: balance; }
+.ld-exp { margin-top: 4px; padding: 3px 10px; border-radius: var(--r-pill); font-size: 12.5px; line-height: 18px; font-weight: 600;
+  color: var(--warn); background: color-mix(in srgb, var(--warn) 14%, transparent); }
+.ld-card { padding: 18px 16px 16px; border-radius: var(--r-lg); background: var(--surface-1); box-shadow: 0 1px 2px rgba(0,0,0,.06), inset 0 0 0 1px var(--hairline); }
+.ld .ld-h { margin: 0 0 14px; font-size: 19px; line-height: 24px; font-weight: 700; letter-spacing: -.01em; }
+.ld-steps { margin: 0; padding: 0; list-style: none; counter-reset: ld; display: grid; gap: 12px; }
+.ld-steps li { counter-increment: ld; display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px; font-size: 16px; line-height: 26px; }
+.ld-step { min-width: 0; }
+.ld-steps li::before { content: counter(ld); width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 700;
+  color: var(--accent); background: var(--accent-soft); }
+.ld-steps b { font-weight: 600; }
+/* a button as it looks on the screen: Safari's Share and Add, the browsers' menus (⋯ ⋮ ≡) */
+.ld-key { display: inline-grid; place-items: center; min-width: 26px; height: 24px; padding: 0 5px; margin: 0 1px; vertical-align: -5px; border-radius: 7px;
+  font-weight: 700; line-height: 1; color: var(--text-1); background: var(--surface-3); box-shadow: inset 0 0 0 1px var(--hairline); }
+.ld-key-ic { color: var(--ld-ios); padding: 0 3px; }
+.ld-pic { width: 18px; height: 18px; }
+.ld-cta { display: block; width: 100%; min-height: 52px; margin-top: 16px; border: 0; border-radius: var(--r-md); font: inherit; font-size: 17px; font-weight: 600;
+  color: var(--cta-fg); background: var(--cta-bg); cursor: pointer; }
+.ld-cta:active { transform: scale(.98); }
+.ld-cta:disabled { opacity: .5; }
+.ld-note { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--hairline); font-size: 14px; line-height: 20px; color: var(--text-2); }
+.ld-cap { padding: 0 4px; font-size: 14px; line-height: 20px; color: var(--text-2); text-align: center; }
+.ld-cap:empty { display: none; }
+.ld-cap.ld-cap-no { color: var(--text-1); }
+.ld-cont { align-self: center; min-height: 44px; padding: 0 16px; border: 0; background: none; font: inherit; font-size: 15px; font-weight: 600; color: var(--accent); cursor: pointer; }
+.ld-cont:active { opacity: .6; }
+.ld-foot { flex: none; padding: 10px var(--gutter-r) calc(var(--safe-b) + 12px) var(--gutter-l); text-align: center; font-size: 12px; line-height: 16px; color: var(--text-3); }
+
+/* ---------------------------------------------------------------- the download-all bubble (over the map) and its Settings page */
+.dl-scrim { position: fixed; inset: 0; z-index: 55; display: flex; align-items: center; justify-content: center; background: var(--scrim); opacity: 0; transition: opacity var(--d-2) linear;
+  padding: calc(var(--safe-t) + 12px) var(--gutter-r) calc(var(--safe-b) + 12px) var(--gutter-l); }
+.dl-scrim.on { opacity: 1; }
+.dl-bubble { width: min(440px, 100%); max-height: 100%; overflow-y: auto; overscroll-behavior: contain; padding: 18px 16px 14px; border-radius: 24px;
+  color: var(--text-1); background: var(--surface-1); box-shadow: 0 18px 60px rgba(0,0,0,.4), inset 0 0 0 1px var(--hairline);
+  transform: translateY(10px) scale(.98); transition: transform var(--d-4) var(--ease-spring); }
+.dl-scrim.on .dl-bubble { transform: none; }
+.dl { display: flex; flex-direction: column; gap: 10px; }
+.dl [hidden] { display: none !important; }
+.dl .dl-h { margin: 0; font-size: 21px; line-height: 27px; font-weight: 700; letter-spacing: -.01em; }
+.dl .dl-lead { margin: 0; font-size: 15px; line-height: 21px; color: var(--text-2); }
+.dl .dl-wait { margin: 0; font-size: 15px; color: var(--text-2); }
+.dl-list { margin: 2px 0 0; padding: 0; list-style: none; border-radius: var(--r-sm); background: var(--surface-2); overflow: hidden; }
+.dl-item { position: relative; display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 10px 12px; }
+.dl-list > li + li::before { content: ""; position: absolute; left: 60px; right: 0; top: 0; height: 1px; background: var(--hairline-2); }
+.dl-item.dl-now { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.dl-t { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.dl-name { font-size: 16px; line-height: 21px; font-weight: 600; }
+.dl-what { font-size: 13px; line-height: 17px; color: var(--text-2); }
+.dl-st { display: inline-flex; align-items: center; gap: 3px; font-size: 14px; line-height: 18px; color: var(--text-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dl-st.dl-ok { color: var(--ok); font-weight: 600; }
+.dl-st.dl-busy { color: var(--accent); font-weight: 600; }
+.dl-st.dl-no { color: var(--text-3); white-space: normal; max-width: 90px; text-align: right; font-size: 12.5px; }
+.dl-ck { width: 18px; height: 18px; stroke-width: 2.4; }
+.dl-total { position: relative; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 10px 12px 10px 60px; font-size: 15px; color: var(--text-2); }
+.dl-total b { color: var(--text-1); font-weight: 700; font-variant-numeric: tabular-nums; }
+.dl .dl-net { margin: 2px 0 0; font-size: 15px; line-height: 21px; color: var(--text-1); }
+.dl .dl-net.dl-strong { padding: 10px 12px; border-radius: var(--r-sm); font-weight: 600; color: var(--warn); background: color-mix(in srgb, var(--warn) 13%, transparent); }
+.dl .dl-net.dl-ok { color: var(--text-2); }
+.dl .dl-fine { margin: 0; font-size: 13px; line-height: 18px; color: var(--text-2); }
+.dl-bar { margin-top: 2px; }
+.dl .dl-prog { margin: 0; font-size: 13px; line-height: 18px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.dl .dl-msg { margin: 0; font-size: 14px; line-height: 20px; color: var(--danger); }
+.dl-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.dl-btns .nc-btn { flex: 1 1 140px; min-height: 48px; }
+.dl-modal .dl-btns { flex-direction: column; }
+.dl-modal .dl-btns .nc-btn { flex: none; width: 100%; }
+.dl-btns .nc-btn.dl-plain { min-height: 44px; background: none; color: var(--text-2); font-weight: 500; }
+.dl-modal .dl-btns .nc-btn.dl-plain { margin-top: -4px; }
+@media (prefers-reduced-motion: reduce) { .dl-scrim, .dl-bubble { transition: none; } }
+
+/* ---------------------------------------------------------------- the copyright bar under the map (ww.js puts it in the map's screen)
+   Everything on the map's screen that sits on its bottom edge (the card, BEAM's and the examples' panels, My layers' bar, the sheets'
+   padding) is placed from --safe-b: inside the screen it grows by the bar's height, so they all sit just above the bar, never under it.
+   The bar fills the phone's own bottom inset too (the iPhone's home bar, Android's gesture or button bar), its words just above it. */
+body.ww.ww-has-foot #v-nowcast { --safe-b: calc(env(safe-area-inset-bottom, 0px) + var(--ww-foot-h)); }
+.ww-foot { position: absolute; left: 0; right: 0; bottom: 0; z-index: 1; display: flex; align-items: flex-start; justify-content: center; width: 100%; margin: 0;
+  height: calc(env(safe-area-inset-bottom, 0px) + var(--ww-foot-h)); padding: 0 var(--gutter-r) env(safe-area-inset-bottom, 0px) var(--gutter-l); border: 0;
+  font: inherit; font-size: 11.5px; line-height: var(--ww-foot-h); letter-spacing: .01em; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  background: color-mix(in srgb, var(--surface-1) 80%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  box-shadow: inset 0 1px 0 var(--hairline); cursor: pointer; -webkit-user-select: none; user-select: none; }
+.ww-foot:active { color: var(--text-1); }
+.ww-foot:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
