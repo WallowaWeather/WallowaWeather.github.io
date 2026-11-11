@@ -125,15 +125,64 @@ export class WeightStore {
       this.state.pack_version = this.m.pack_version; await this._saveState(); lastSave = performance.now();
     };
     const aborted = () => opts.signal && opts.signal.aborted;
+    const tick = async () => { if (!saving && performance.now() - lastSave > 3000) { saving = save(); try { await saving; } finally { saving = null; } } };
+    // 1.0.1: a server, a CDN or a browser that answers a chunk request with the whole file (HTTP 200: a phone following a cross-origin
+    // redirect can drop the Range header) -> the file is read ONCE from that answer, as it arrives: every chunk still checked against the
+    // manifest and written as it lands, the chunks already on the phone skipped. One read per file; other chunk requests for it wait on it
+    const whole = new Map();
+    const streamWhole = async (s, r) => {
+      const name = `${this.dir}/${s.file}`, b = bits.get(s.name), ch = s.chunk_bytes;
+      for (let i = q.length - 1; i >= 0; i--) if (q[i][0] === s) q.splice(i, 1);   // the rest of this file comes in this one answer
+      const rd = r.body.getReader();
+      let ci = 0, fill = 0, buf = new Uint8Array(Math.min(ch, s.bytes));
+      const landed = async () => {
+        if (b[ci] !== '1') {
+          const ab = buf.buffer;
+          if (hex(await crypto.subtle.digest('SHA-256', ab)) !== s.chunk_sha256[ci]) throw new Error(`download ${s.file}: chunk ${ci} failed verification`);
+          await this.st.call('write', { name, at: ci * ch, buf: ab }, [ab]);
+          if (b[ci] !== '1') { b[ci] = '1'; got += Math.min(ch, s.bytes - ci * ch); }
+          dirty.add(name);
+          if (opts.onProgress) opts.onProgress({ have: st0.have + got, total: st0.total, shard: s.name, bytesPerSec: got / ((performance.now() - t0) / 1000) });
+          await tick();
+        }
+        ci++; fill = 0;
+        if (ci * ch < s.bytes) buf = new Uint8Array(Math.min(ch, s.bytes - ci * ch));
+      };
+      try {
+        for (;;) {
+          if (aborted()) throw new DOMException('aborted', 'AbortError');
+          const { done, value } = await rd.read();
+          if (done) break;
+          for (let off = 0; off < value.length;) {
+            if (ci * ch >= s.bytes) throw new Error(`download ${s.file}: the server sent more than the file`);
+            const n = Math.min(value.length - off, buf.length - fill);
+            buf.set(value.subarray(off, off + n), fill); fill += n; off += n;
+            if (fill === buf.length) await landed();
+          }
+        }
+        if (ci * ch < s.bytes) throw new Error(`download ${s.file}: the file ended early`);
+      } catch (e) {
+        try { await rd.cancel(); } catch (e2) { /* closed already */ }
+        throw e;
+      }
+    };
     const worker = async () => {
       while (q.length && !err) {
         const [s, ci] = q.shift(), at = ci * s.chunk_bytes, len = Math.min(s.chunk_bytes, s.bytes - at), name = `${this.dir}/${s.file}`;
-        let ok = false;
+        let ok = false, viaWhole = false;
         for (let attempt = 0; attempt < 4 && !ok && !err; attempt++) {
           if (aborted()) throw new DOMException('aborted', 'AbortError');
+          if (bits.get(s.name)[ci] === '1') { ok = true; viaWhole = true; break; }   // landed meanwhile, from a whole-file answer
           let ab = null;
           try {
             const r = await fetch(this.base + s.file, { headers: { Range: `bytes=${at}-${at + len - 1}` }, signal: opts.signal, cache: 'no-store' });
+            if (r.status === 200 && !(at === 0 && len === s.bytes) && r.body) {   // the whole file for a chunk request: read it once (above)
+              let p = whole.get(s.name);
+              if (p) { try { await r.body.cancel(); } catch (e) { /* */ } }
+              else { p = streamWhole(s, r).catch((e) => { whole.delete(s.name); throw e; }); whole.set(s.name, p); }
+              await p;
+              ok = true; viaWhole = true; break;
+            }
             if (r.status !== 206 && !(r.status === 200 && at === 0 && len === s.bytes)) {
               try { await r.body.cancel(); } catch (e) { /* an unread body would pin one of the browser's few connections */ }
               throw Object.assign(new Error(`download ${s.file}: HTTP ${r.status} (the pack server must honour HTTP Range requests)`), { fatal: r.status === 200 || r.status === 404 || r.status === 403 });
@@ -150,6 +199,8 @@ export class WeightStore {
         }
         if (err) return;
         if (!ok) throw new Error(`download ${s.file}: chunk ${ci} failed verification 4 times`);
+        if (viaWhole) continue;   // written, counted and saved by the whole-file read
+        if (bits.get(s.name)[ci] === '1') continue;   // the same bytes landed from a whole-file read meanwhile
         bits.get(s.name)[ci] = '1'; dirty.add(name); got += len;
         if (opts.onProgress) opts.onProgress({ have: st0.have + got, total: st0.total, shard: s.name, bytesPerSec: got / ((performance.now() - t0) / 1000) });
         if (!saving && performance.now() - lastSave > 3000) { saving = save(); try { await saving; } finally { saving = null; } }

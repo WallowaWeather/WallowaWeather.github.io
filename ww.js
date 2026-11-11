@@ -17,7 +17,7 @@ import { beamModel } from './nowcast/beam_live.js';   // v009: BEAM live on this
 import { COUNTIES, countyAt } from './nowcast/counties.js';   // v014: the app's counties (Wallowa first; the others are simply there)
 import { speedTuneHooks } from './nowcast/tune/ui.js';   // SPEED TUNE: Settings > Speed tune
 
-export const VERSION = 'Wallowa Weather 1.0';
+export const VERSION = 'Wallowa Weather 1.0.1';
 // the app's area: Wallowa County (its name, box and home: the town of Wallowa); v014: it forecasts, searches and runs nowcasts inside any of its counties
 const AREA = { app: 'Wallowa Weather', name: COUNTIES[0].name, bbox: COUNTIES[0].bbox, home: COUNTIES[0].home, counties: COUNTIES, countyAt,
   contains(lat, lon) { return !!countyAt(lat, lon); } };
