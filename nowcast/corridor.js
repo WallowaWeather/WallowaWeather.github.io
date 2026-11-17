@@ -1,7 +1,9 @@
 // nowcast/corridor.js - v003.
 // The storm-track corridor: every strong storm core the radar sees now (50 dBZ or more) is matched to where it was 20 (else 30) minutes ago;
 // that motion is swept 0-90 minutes ahead, widened +-10 degrees in direction and 85-115 % in speed, and the corridor is the convex hull of
-// everywhere the core could be. In the backtest it covered 52 % of Wallowa hail and wind reports 60+ minutes ahead with ~5 % of the county.
+// everywhere the core could be. In the backtest (the corridor results, this variant's "Wallowa reports, 60+" row)
+// it covered 52 % (25 of 48) of Wallowa hail and wind reports 60+ minutes ahead; the corridor that covered a report took a median 24 %
+// of the county, and 28 % of the county was warned per start. (1.0.3: 1.0.2 paired the 52 % with the ~5 % of the hail-only row.)
 
 'use strict';
 

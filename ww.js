@@ -18,7 +18,7 @@ import { COUNTIES, countyAt } from './nowcast/counties.js';   // v014: the app's
 import { speedTuneHooks } from './nowcast/tune/ui.js';   // SPEED TUNE: Settings > Speed tune
 import { shareInto } from './share.js';   // 1.0.2: Settings › Share the app
 
-export const VERSION = 'Wallowa Weather 1.0.2';
+export const VERSION = 'Wallowa Weather 1.0.3';
 // the app's area: Wallowa County (its name, box and home: the town of Wallowa); v014: it forecasts, searches and runs nowcasts inside any of its counties
 const AREA = { app: 'Wallowa Weather', name: COUNTIES[0].name, bbox: COUNTIES[0].bbox, home: COUNTIES[0].home, counties: COUNTIES, countyAt,
   contains(lat, lon) { return !!countyAt(lat, lon); } };
@@ -41,16 +41,22 @@ if (window.top !== window.self) {
 const LOG = [];
 function diag(name, data) { LOG.push({ t: new Date().toISOString(), name, data: data || null }); if (LOG.length > 300) LOG.shift(); try { console.info('[ww]', name, data || ''); } catch (e) { /* */ } }
 addEventListener('error', (e) => diag('page error', { message: String(e.message || e.error || e).slice(0, 200), src: (e.filename || '').split('/').pop(), line: e.lineno }));
+// 1.0.3: a model list refused at Hugging Face (engine/core/pin.js manifestRefused): a Diagnostics row (no one listened before)
+addEventListener('wallowa-weather:manifest', (e) => diag('model list refused', e.detail || null));
 addEventListener('unhandledrejection', (e) => diag('page error', { message: String((e.reason && e.reason.message) || e.reason).slice(0, 200) }));
 let toastT = 0;
 function toast(text) { const t = $('ww-toast'); t.textContent = text; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 4200); }
 
 // ---------------------------------------------------------------------------------------------- the three models: status + downloads
 let DG = null, SS = null, BM = null;
-const dgmr = async () => DG || (DG = await createNowcastEngine({ packUrl: PACKS['dgmr-nowcast'] }));
-const storm = async () => SS || (SS = await createStormScopeEngine({ packUrl: PACKS['stormscope-mrms'] }).then((e) => { e.on('f16', (d) => { diag('stormscope: f16 rounding ' + d.mode, d); LS.set('ww:f16', { mode: d.mode, t: Date.now() }); }); return e; }));   // FIELD REPORT (fieldkit): the last f16 rounding kept for the report
+/** 1.0.3: an engine's warning (it stopped last time: the phone ran out of memory or got hot) in Diagnostics and a toast; until 1.0.3
+ *  the engines said it to no one */
+const heard = (name) => (e) => { e.on('warning', (d) => { diag(name + ': ' + ((d && d.code) || 'warning'), d); if (d && d.message) toast(d.message); }); return e; };
+const dgmr = async () => DG || (DG = await createNowcastEngine({ packUrl: PACKS['dgmr-nowcast'] }).then(heard('nowcast')));
+const storm = async () => SS || (SS = await createStormScopeEngine({ packUrl: PACKS['stormscope-mrms'] }).then(heard('stormscope')).then((e) => { e.on('f16', (d) => { diag('stormscope: f16 rounding ' + d.mode, d); LS.set('ww:f16', { mode: d.mode, t: Date.now() }); }); return e; }));   // FIELD REPORT (fieldkit): the last f16 rounding kept for the report
 const beam = async () => BM || (BM = beamModel({ packUrl: PACKS.beam }));   // v009 (the engine itself loads only for a run)
 const ST = { dgmr: null, ss: null, beam: null }, DL = { dgmr: null, ss: null, beam: null };
+let BEAM_CAP = null;   // 1.0.3: BEAM's capability on this phone, once asked (see the start, below)
 const eng = (k) => (k === 'dgmr' ? dgmr() : k === 'beam' ? beam() : storm());
 async function refresh(k) {
   try { ST[k] = await (await eng(k)).status(); } catch (e) { ST[k] = { complete: false, error: String((e && e.message) || e) }; diag('model status', { k, message: ST[k].error }); }
@@ -58,7 +64,7 @@ async function refresh(k) {
 }
 /** LANDING: can this phone run model k at all? -> { supported, reason } (the engine's own check: WebGPU, the graphics chip's limits) */
 async function capOf(k) {
-  try { const e = await eng(k), c = e.capabilities ? e.capabilities() : { supported: e.supported ? e.supported() : true }; return { supported: !!c.supported, reason: c.reason || '' }; }
+  try { const e = await eng(k), c = e.capabilities ? await e.capabilities() : { supported: e.supported ? e.supported() : true }; return { supported: !!c.supported, reason: c.reason || '' }; }   // 1.0.3: BEAM's is asked (a promise)
   catch (e) { return { supported: true, reason: '' }; }   // the download says what is wrong
 }
 /** Android (Chrome) + iPhone: before a download, can this phone run the model at all, and is there room for the rest of it? -> '' | why not */
@@ -104,8 +110,8 @@ const Q = (() => {
   async function pump() {
     if (busy || held) return; const j = jobs.find((x) => x.status === 'queued'); if (!j) return;
     busy = true; j.status = 'running'; clearTimeout(idleT);
+    const ss = j.params.model === 'stormscope', bm = j.params.model === 'beam';
     try {
-      const ss = j.params.model === 'stormscope', bm = j.params.model === 'beam';
       const k = ss ? 'ss' : bm ? 'beam' : 'dgmr';
       if (!(ST[k] && ST[k].complete)) { j.status = 'cancelled'; emit('needs-download', j); return; }
       // v009: BEAM never runs beside StormScope (its peak is ~570 MB of graphics memory) or DGMR: the others let go of the GPU first
@@ -118,6 +124,10 @@ const Q = (() => {
       j.status = 'done'; j.result = result; emit('done', j);
     } catch (e) {
       j.status = e && (e.name === 'AbortError' || e.code === 'ABORTED') ? 'cancelled' : 'failed'; j.error = { message: String((e && e.message) || e).slice(0, 200), code: (e && e.code) || null };
+      // 1.0.3: DGMR's full model ran out of graphics memory: this phone switches to the 8-bit model (the card then offers its download)
+      if (!ss && !bm && e && (e.code === 'OUT_OF_MEMORY' || e.code === 'GPU_LOST') && DG && DG.precision() === 'float') {
+        DG.useLowMemory(); j.error.lowMem = true; diag('nowcast: the 8-bit model from now on (the full one ran out of graphics memory)'); refresh('dgmr');
+      }
       diag('forecast ' + j.status, j.error); emit(j.status, j);
     } finally {
       busy = false; if (jobs.length > 30) jobs.splice(0, jobs.length - 30);
@@ -166,7 +176,7 @@ const SETTINGS = {
       : { status: () => ({ note: 'Examples' }), size: () => BEAM_SIZE_MB * 1e6 },
     stormscope: { status: () => stOf('ss'), size: () => stOf('ss').bytes, download: () => download('ss'), del: () => deleteModel('ss') },
     dgmr: { status: () => stOf('dgmr'), size: () => stOf('dgmr').bytes, download: () => download('dgmr'), del: () => deleteModel('dgmr') } },
-  installGuide: (el) => renderGuide(el, { onDone: () => {} }),
+  installGuide: (el, o = {}) => renderGuide(el, { onDone: o.onDone || null }),   // 1.0.3: Settings passes onDone (back to its list); 1.0.2's did nothing
   downloadAll: { sub: () => DLALL.sub(), build: (el) => DLALL.build(el) },   // LANDING: Settings › Download all (v019: the models and the county map)
   share: PUBLIC_URL ? { build: (el) => shareInto(el, { url: PUBLIC_URL, toast }) } : null,   // 1.0.2: Settings › Share the app
   diagnostics: diagInto,
@@ -178,8 +188,10 @@ const SETTINGS = {
       + 'The place on the map, rounded to about 1 km, goes to the National Weather Service for its forecast and alerts. Map tiles and lot '
       + 'lines for the area on screen come from USGS, NASA, Oregon Explorer and the county\'s map service (Wallowa County\'s is hosted by '
       + 'Esri ArcGIS). Radar, satellite and forecast data come from NOAA\'s open data on Amazon Web Services, in whole files or pieces about '
-      + '200 km across or more, never for one spot. River gauges (USGS) and fires (NIFC, on ArcGIS) come for the whole county. Each time it '
-      + 'opens, the app checks its model files at Hugging Face.',
+      + '200 km across or more, never for one spot. River gauges (USGS) and fires (NIFC, on ArcGIS) come for the whole county. Hugging Face '
+      // 1.0.3: true to store.js since v018 - a downloaded model's file list is kept and used without asking (1.0.2 said "each time it opens")
+      + 'serves the model files: until a model is downloaded, the app asks it for that model\'s file list each time it opens; after that, '
+      + 'only when an app update changes the model.',
     'Your location: the app never sends or saves your exact GPS position. When you tap Locate, or the app opens on your location, that '
       + 'place is used like any place you pick: the Weather Service gets it rounded to about 1 km, and the map loads the tiles around it. '
       + 'Otherwise it leaves the phone only in a field report or a location you share.',
@@ -198,7 +210,8 @@ NC = initNowcast({ Q: () => Q, section: $('v-nowcast'),
   ssReady: () => !!(ST.ss && ST.ss.complete), ssDl: () => DL.ss, ssSize: () => (ST.ss && ST.ss.totalBytes) || 355616347, ssDownload: () => download('ss'),
   ssListed: () => !!PACKS['stormscope-mrms'], ssEngine: storm,
   // v009: BEAM live (the view runs it through the queue, shows its maps, keeps it fresh every 10 min if asked)
-  beam: PACKS.beam ? { listed: () => true, ready: () => !!(ST.beam && ST.beam.complete), dl: () => DL.beam, size: () => stOf('beam').bytes, download: () => download('beam'),
+  // 1.0.3: cap() = BEAM's capability once known ({ supported, reason }, null before): the view offers no download or run where it can't run
+  beam: PACKS.beam ? { listed: () => true, ready: () => !!(ST.beam && ST.beam.complete), dl: () => DL.beam, size: () => stOf('beam').bytes, download: () => download('beam'), cap: () => BEAM_CAP,
     model: () => BM || (BM = beamModel({ packUrl: PACKS.beam })), release: () => { if (BM) BM.release(); } } : null,
   area: AREA, defaultModel: 'stormscope', defaultBasemap: 'satellite' });
 
@@ -284,6 +297,7 @@ function fitViewport() {
   NC.open({});   // the map at once (the town of Wallowa, or the person's own place in the county)
   footBar();   // LANDING
   await Promise.all([refresh('ss'), refresh('dgmr'), PACKS.beam ? refresh('beam') : null]);
+  if (PACKS.beam) { BEAM_CAP = await capOf('beam'); if (!BEAM_CAP.supported) diag('beam: not for this phone', BEAM_CAP); if (NC) NC.refresh(); }   // 1.0.3
   // LANDING: then, once, the download-all bubble (an installed app's first launch, or just after the install page)
   try {
     const caps = await DLALL.caps(), plan = DLALL.plan(), noGpu = !plan.anyRuns;

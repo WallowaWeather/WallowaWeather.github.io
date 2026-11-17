@@ -166,6 +166,18 @@ class BeamModel {
   emit(n, d) { for (const f of this.fns.get(n) || []) { try { f(d); } catch (e) { console.error(e); } } }
   /** WebGPU at all (BEAM's engine has a 32-bit path for chips without 16-bit shaders) */
   supported() { return !!(globalThis.navigator && navigator.gpu); }
+  /** 1.0.3: can this phone run BEAM - WebGPU AND a graphics adapter, asked once as DGMR's and StormScope's engines ask. 1.0.2 checked only
+   *  navigator.gpu, so a phone with WebGPU but no adapter was offered BEAM, downloaded it, then failed every run (and Keep fresh retried).
+   *  -> Promise<{ supported, reason }> */
+  capabilities() {
+    return this._caps || (this._caps = (async () => {
+      if (!this.supported()) return { supported: false, reason: 'needs a browser with WebGPU (Safari on iOS 26 or later, or Chrome on Android 12 or later)' };
+      try {
+        const ad = await navigator.gpu.requestAdapter({ powerPreference: this.opts.powerPreference });
+        return ad ? { supported: true, reason: '' } : { supported: false, reason: 'no WebGPU adapter' };
+      } catch (e) { return { supported: false, reason: String((e && e.message) || e).slice(0, 160) }; }
+    })());
+  }
   async _open() { if (!this.store.m) await this.store.open(); return this.store; }
   async status() { const s = await this._open(), st = s.status(); return { complete: st.complete, haveBytes: st.have, totalBytes: st.total, packVersion: s.m.pack_version }; }
   async download({ onProgress, signal } = {}) {

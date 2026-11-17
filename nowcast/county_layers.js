@@ -30,9 +30,10 @@ export function lotWords(c) {
   };
 }
 
-/** c: a county; o: { map, nws, basemap (false: the plain GIBS map, no map layers), onParcels(), places, onLot(lot), fetchFn } ->
+/** c: a county; o: { map, nws, basemap (false: the plain GIBS map, no map layers), onParcels(), places, onLot(lot), onGauges(list) (1.0.3:
+ *  new gauge readings, for the drainages list), fetchFn } ->
  *  { county, parcels, lots, affected, drains, gauges, fires, fwx, lands, words, destroy() } */
-export function countyLayers(c, { map = null, nws = null, basemap = true, onParcels = () => {}, places = null, onLot = () => {}, fetchFn } = {}) {
+export function countyLayers(c, { map = null, nws = null, basemap = true, onParcels = () => {}, places = null, onLot = () => {}, onGauges = () => {}, fetchFn } = {}) {
   const P = c.parcels, F = fetchFn ? { fetchFn } : {};
   const svc = P ? { url: P.url, idField: P.idField, lotField: P.lotField, page: P.maxRecords } : null;   // its lot service
   const L = {
@@ -41,7 +42,7 @@ export function countyLayers(c, { map = null, nws = null, basemap = true, onParc
     lots: createLotCounter(Object.assign({ bbox: c.bbox, url: svc ? svc.url : null }, F)),
     affected: svc ? createAffected(Object.assign({ bbox: c.bbox, map, places, onLot, county: c.short, owners: P.owners !== false, centroid: P.centroid !== false }, svc, F)) : null,
     drains: basemap && c.drainages ? createDrainages(Object.assign({ map, url: countyUrl(c.drainages), county: c.short }, F)) : null,
-    gauges: basemap ? createGauges(Object.assign({ map, box: c.gaugeBox, limit: c.gaugeLimit || 1000 }, F)) : null,
+    gauges: basemap ? createGauges(Object.assign({ map, box: c.gaugeBox, limit: c.gaugeLimit || 1000, onChange: (list) => onGauges(list) }, F)) : null,
     fires: basemap ? createFires(Object.assign({ map, box: c.fireBox }, F)) : null,
     fwx: basemap && c.firewx ? fireWx(nws, Object.assign({ map, zones: c.firewx.zones, note: firewxNote(c.firewx.office) }, F)) : null,
     lands: basemap && c.lands ? (fetchFn ? createLands(Object.assign({ url: countyUrl(c.lands) }, F)) : landsOf(countyUrl(c.lands), F)) : null,

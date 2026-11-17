@@ -13,7 +13,7 @@ import { boxProjection } from '../regrid.js';
 import { summaryAt, THRESHOLDS } from '../run.js';
 
 export const STORMSCOPE = {
-  id: 'stormscope', name: 'StormScope', label: 'Pilot · NVIDIA StormScope, not retrained',
+  id: 'stormscope', name: 'StormScope', label: 'NVIDIA StormScope, not retrained for the West',
   outputs: { frames: 9, firstMin: 10, everyMin: 10 },
   credit: 'Nowcast: NVIDIA StormScope (NVIDIA Open Model License), modified',
   licence: { id: 'NVIDIA Open Model License', url: 'https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-license/',

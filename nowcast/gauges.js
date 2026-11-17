@@ -124,6 +124,7 @@ export function summarise(parsed, names = new Map()) {
   }
   return out.sort((a, b) => b.lat - a.lat);
 }
+const fastOf = (g) => !!((g.q && g.q.trend && g.q.trend.fast) || (g.h && g.h.trend && g.h.trend.fast));
 const QUALS = { ICE: 'ice affected', EQP: 'equipment problem', EQUIP: 'equipment problem', E: 'estimated', EST: 'estimated', BKW: 'backwater', ZFL: 'zero flow', MNT: 'maintenance', DRY: 'dry', FLD: 'flood damage', PRT: 'partial record', RVB: 'revised' };
 function trendWords(x) {
   const tr = x.trend; if (!tr) return '';
@@ -131,6 +132,14 @@ function trendWords(x) {
   const amt = x.unit === 'ft' ? `${Math.abs(tr.d).toFixed(2)} ft` : valueText(Math.abs(tr.d), 'cfs');
   const span = tr.hours > 1.4 ? `${tr.hours.toFixed(1)} hours` : 'the last hour';
   return `, ${tr.dir === 'up' ? 'rising' : 'falling'} ${amt} in ${span}${tr.fast ? ' (fast)' : ''}`;
+}
+/** 1.0.3: a gauge's newest reading in one line, for the "Drainages at risk" list: its flow (else its gage height) with the trend, as
+ *  the sheet says it -> { text: 'Flow 719 cfs, rising 40.0 cfs in the last hour (fast)', t (its time), dir ('up' | 'down' | 'steady' |
+ *  null), fast } */
+export function gaugeReading(g) {
+  const x = g.q || g.h; if (!x) return { text: '', t: null, dir: null, fast: false };
+  const t = Math.max(g.q ? g.q.t : 0, g.h ? g.h.t : 0);
+  return { text: `${x === g.q ? 'Flow' : 'Gage height'} ${valueText(x.v, x.unit)}${trendWords(x)}`, t, dir: x.trend ? x.trend.dir : null, fast: fastOf(g) };
 }
 /** the sheet text of a gauge */
 export function gaugeInfo(g, now = Date.now()) {
@@ -146,7 +155,6 @@ export function gaugeInfo(g, now = Date.now()) {
   return { kind: 'gauge', id: g.id, gauge: g, title: g.name, color: '#2F8CFF', badge: prov ? 'Provisional data' : '', lines,
     foot: GAUGES_NOTE, link: { label: 'This gauge on USGS Water Data', href: pageOf(g.id) } };
 }
-const fastOf = (g) => !!((g.q && g.q.trend && g.q.trend.fast) || (g.h && g.h.trend && g.h.trend.fast));
 const dirOf = (g) => ((g.q || g.h).trend || {}).dir || null;
 
 /** { map, fetchFn, every, box, hours, labelZ, onChange(list, err), now, poller options } -> { on(bool), isOn(), refresh(force), list(),

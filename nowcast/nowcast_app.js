@@ -49,7 +49,7 @@ export function initNowcast(api) {
       const offs = [], end = (f) => { for (const o of offs) o(); f(); };
       offs.push(Q.on('progress', (x, p) => { if (x.id === j.id) onProgress(p); }));
       offs.push(Q.on('done', (x) => { if (x.id === j.id) end(() => (x.result && x.result.beam ? res(x.result.beam) : rej(Object.assign(new Error((x.result && x.result.error) || 'BEAM did not run'), { code: (x.result && x.result.code) || null })))); }));
-      offs.push(Q.on('failed', (x) => { if (x.id === j.id) end(() => rej(Object.assign(new Error((x.error && x.error.message) || 'failed'), { code: x.error && x.error.code }))); }));
+      offs.push(Q.on('failed', (x) => { if (x.id === j.id) end(() => rej(Object.assign(new Error((x.error && x.error.message) || 'failed'), { code: x.error && x.error.code, lowMem: !!(x.error && x.error.lowMem) }))); }));
       offs.push(Q.on('cancelled', (x) => { if (x.id === j.id) end(() => rej(Object.assign(new Error('cancelled'), { code: 'ABORTED' }))); }));
       offs.push(Q.on('needs-download', (x) => { if (x.id === j.id) end(() => rej(Object.assign(new Error('Download BEAM first.'), { code: 'NOT_DOWNLOADED' }))); }));
     });
@@ -91,7 +91,7 @@ export function initNowcast(api) {
       const end = (f) => { for (const o of offs) o(); f(); };
       offs.push(Q.on('progress', (x, p) => { if (x.id === j.id) onProgress(p); }));
       offs.push(Q.on('done', (x) => { if (x.id === j.id) end(() => (x.result && x.result.runId ? res(x.result.runId) : rej(Object.assign(new Error((x.result && x.result.error) || 'no nowcast'), { code: (x.result && x.result.code) || null })))); }));
-      offs.push(Q.on('failed', (x) => { if (x.id === j.id) end(() => rej(Object.assign(new Error((x.error && x.error.message) || 'failed'), { code: x.error && x.error.code }))); }));
+      offs.push(Q.on('failed', (x) => { if (x.id === j.id) end(() => rej(Object.assign(new Error((x.error && x.error.message) || 'failed'), { code: x.error && x.error.code, lowMem: !!(x.error && x.error.lowMem) }))); }));
       offs.push(Q.on('cancelled', (x) => { if (x.id === j.id) end(() => rej(Object.assign(new Error('cancelled'), { code: 'ABORTED' }))); }));
       offs.push(Q.on('blocked', (x) => { if (x.id === j.id) end(() => rej(Object.assign(new Error((x.error && x.error.message) || 'blocked'), { code: x.error && x.error.code }))); }));
       offs.push(Q.on('needs-download', (x) => { if (x.id === j.id) { Q.cancel(x.id).catch(() => {}); end(() => rej(Object.assign(new Error('Download the nowcast model first.'), { code: 'NOT_DOWNLOADED' }))); } }));
@@ -128,7 +128,7 @@ export function initNowcast(api) {
         return { runId: r.id, t0: r.t0, summary: r.summary ? r.summary.text : '' };
       } catch (e) {
         if (e && (e.name === 'AbortError' || e.code === 'ABORTED')) throw e;
-        if (e && (e.code === 'OUT_OF_MEMORY' || e.code === 'GPU_LOST')) throw e;   // the queue's fallback / retry
+        if (e && (e.code === 'OUT_OF_MEMORY' || e.code === 'GPU_LOST')) throw e;   // to the queue (ww.js pump): it logs it and, for DGMR's full model, switches this phone to the 8-bit one (1.0.3: there is no retry)
         api.diag('nowcast stopped', { code: (e && e.code) || null, message: String((e && e.message) || e).slice(0, 160) });
         return { error: String((e && e.message) || e).slice(0, 200), code: (e && e.code) || 'ERROR' };
       }

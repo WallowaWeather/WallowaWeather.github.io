@@ -59,6 +59,9 @@ class NowcastEngine {
     if (want === 'float' || want === 'int8') return want;
     return this.caps.maxBindMB >= 130 ? 'float' : 'int8';   // the float weights bind as one 123 MB buffer, its largest activation 113 MB
   }
+  /** 1.0.3: the full model ran out of graphics memory here: this phone uses the 8-bit one from now on (the key precision() reads; until
+   *  1.0.3 nothing wrote it) */
+  useLowMemory() { LS('wallowa-weather:nowcast:precision', 'int8'); }
   async _open(p) { const s = this.stores[p]; if (!s.m) await s.open(); return s; }
   /** -> { complete, haveBytes, totalBytes, packVersion, precision, other: { precision, complete } } */
   async status(p = this.precision()) {

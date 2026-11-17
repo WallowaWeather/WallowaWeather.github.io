@@ -25,3 +25,18 @@ export const SKILL = {
     'For warnings, follow the National Weather Service and your local officials. This nowcast is experimental.',
   ],
 };
+
+/** 1.0.3: "How accurate is this?" for the model on the map (1.0.2 showed DGMR's scores whichever was picked). id: the model's id; m: its
+ *  models_info.js entry. DGMR: the scores above. BEAM: its blind tests, the same lines as its Settings page. StormScope: no scores of
+ *  ours yet, so it says so and gives what is known. -> { intro: [], lists: [{ title, items }], tables: [], outro: [] } */
+export function accuracyOf(id, m) {
+  const follow = SKILL.outro[SKILL.outro.length - 1];
+  if (id === 'dgmr' || !m) return Object.assign({ lists: [] }, SKILL);
+  if (id === 'beam') {
+    return { intro: [`${m.name}’s scores come from blind tests on storm days it never saw, scored once, with its warning levels fixed before the test.`],
+      lists: [{ title: 'Where it did well', items: m.strengths || [] }, { title: 'Where it did not', items: m.weaknesses || [] }], tables: [],
+      outro: ['The details are on its page: Settings › BEAM.', follow] };
+  }
+  return { intro: [`${m.name} has not been scored on storms here: this app has no measured accuracy for it yet.`],
+    lists: [{ title: 'What is known about it', items: m.strengths || [] }, { title: 'Its limits', items: m.weaknesses || [] }], tables: [], outro: [follow] };
+}

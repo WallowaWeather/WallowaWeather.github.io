@@ -2,8 +2,8 @@
 // agriculture and general use): four ready-made views of the map. A preset sets the map's
 // switches, says which BEAM heads the card and the app's alerts lead with, and which NWS alerts to highlight. The people behind each:
 //   water: the Oregon Water Resources Department's watermaster (which drainages may see high water or flash flooding);
-//   fire:  the Oregon Department of Forestry and the US Forest Service (storm direction, lightning with a fan of accuracy, dry
-//          lightning first, so crews get a head start where lightning may start fires);
+//   fire:  the Oregon Department of Forestry and the US Forest Service (BEAM's lightning first, red flags, the satellite and current
+//          fires, so crews get a head start where lightning may start fires);
 //   farm:  farmers and ranchers (hail on their land, heavy rain, wind and frost).
 // Radar, "My location" and "Keep the county map on this phone" are never changed by a preset: radar is always on, the location is the
 // person's own choice, the saved map is a storage choice. "Rain or snow" (type) is a radar setting and is left alone too.
@@ -12,14 +12,19 @@
 export const PRESET_IDS = ['general', 'water', 'fire', 'farm'];
 
 /** the switches a preset sets: the view's own S.layers keys, then the v008 ones (drainages, gauges, fires, firewx = NWS fire weather
- *  zones, lightning = observed GOES lightning, beamHail / beamLightning / beamRain = BEAM's chance maps, fan = the storm-direction fan) */
-export const PRESET_KEYS = ['nowcast', 'warnings', 'clouds', 'parcels', 'roads', 'lands', 'drainages', 'gauges', 'fires', 'firewx', 'lightning', 'beamHail', 'beamLightning', 'beamRain', 'fan'];
+ *  zones). 1.0.3: every key here is one the map reads. The v008 keys lightning (observed GOES lightning: the app has no such layer yet),
+ *  beamHail / beamLightning / beamRain (nothing read them: the hazard BEAM shows is the preset's hazards[0], below) and fan (live runs have
+ *  no storm cones yet) are gone, so no preset sets a switch that does nothing; an older phone's saved values of them are ignored */
+export const PRESET_KEYS = ['nowcast', 'warnings', 'clouds', 'parcels', 'roads', 'lands', 'drainages', 'gauges', 'fires', 'firewx'];
 
 /** the BEAM heads a preset can lead with */
 export const HAZARDS = ['core', 'hail', 'lightning', 'rain'];
 
-const off = { nowcast: true, warnings: true, clouds: false, parcels: false, roads: true, lands: true, drainages: false, gauges: false, fires: false, firewx: false, lightning: false, beamHail: false, beamLightning: false, beamRain: false, fan: false };
+const off = { nowcast: true, warnings: true, clouds: false, parcels: false, roads: true, lands: true, drainages: false, gauges: false, fires: false, firewx: false };
 
+// model: the forecast model a preset picks, or null to leave the person's choice. 1.0.3: only Water picks one - its drainages are flagged
+// by BEAM's cloudburst warning alone, so Water without BEAM showed no flags; Fire's and Farm's hazards also come from StormScope's alerts
+// (lightning, hail), so those leave the model as it is.
 // NWS event names exactly as api.weather.gov writes them. NWS's hazard table (weather.gov/help-map, checked Nov-08-2026) no longer
 // lists Hard Freeze Watch / Warning (folded into Freeze); they stay on the farm list in case an office still issues one.
 export const PRESETS = {
@@ -28,30 +33,34 @@ export const PRESETS = {
     blurb: 'Storms, rain and NWS warnings, for everyone',
     layers: Object.assign({}, off),
     hazards: ['core', 'hail', 'lightning', 'rain'],
+    model: null,
     allWarnings: true,
     alertEvents: [],
   },
   water: {
     id: 'water', label: 'Water (OWRD)', icon: 'water', color: '#2F8CFF',
-    blurb: 'Drainages that may see high water, and live stream gauges',
-    layers: Object.assign({}, off, { lands: false, drainages: true, gauges: true, beamRain: true }),
+    blurb: 'Cloudburst flags on drainages, stream gauges and flood alerts',
+    layers: Object.assign({}, off, { lands: false, drainages: true, gauges: true }),
     hazards: ['rain', 'core'],
+    model: 'beam',
     allWarnings: false,
     alertEvents: ['Flash Flood Warning', 'Flash Flood Watch', 'Flood Warning', 'Flood Advisory', 'Flood Watch', 'Hydrologic Outlook', 'Flash Flood Statement', 'Flood Statement'],
   },
   fire: {
     id: 'fire', label: 'Fire weather', icon: 'fire', color: '#FF6A2B',
-    blurb: 'Dry lightning, storm direction, red flags and current fires',
-    layers: Object.assign({}, off, { clouds: true, fires: true, firewx: true, lightning: true, beamLightning: true, fan: true }),
+    blurb: 'Lightning first, red flags, the satellite and current fires',
+    layers: Object.assign({}, off, { clouds: true, fires: true, firewx: true }),
     hazards: ['lightning', 'core'],
+    model: null,
     allWarnings: false,
     alertEvents: ['Red Flag Warning', 'Fire Weather Watch', 'Severe Thunderstorm Warning', 'Extreme Fire Danger', 'Fire Warning'],
   },
   farm: {
     id: 'farm', label: 'Farm & ranch', icon: 'farm', color: '#34A853',
     blurb: 'Hail, heavy rain, wind and frost on your land',
-    layers: Object.assign({}, off, { parcels: true, lands: false, beamHail: true, beamRain: true }),
+    layers: Object.assign({}, off, { parcels: true, lands: false }),
     hazards: ['hail', 'rain', 'core'],
+    model: null,
     allWarnings: false,
     alertEvents: ['Severe Thunderstorm Warning', 'Frost Advisory', 'Freeze Warning', 'Freeze Watch', 'Hard Freeze Warning', 'Hard Freeze Watch', 'Wind Advisory', 'High Wind Warning', 'High Wind Watch', 'Flash Flood Warning', 'Flood Warning'],
   },
@@ -83,6 +92,13 @@ export function presetRank(id, event) {
   const p = presetOf(id), e = String(event || ''), i = p.alertEvents.indexOf(e);
   if (i >= 0) return i;
   return 100 + (/warning/i.test(e) ? 0 : /watch/i.test(e) ? 1 : 2);
+}
+
+/** 1.0.3: the NWS alerts at the place that the card's banner shows under a preset: every warning (a preset never hides one) and the
+ *  preset's own events (Water: Flood and Flash Flood Watches, Flood Advisories, Hydrologic Outlooks, the statements), in presetRank's
+ *  order. Until 1.0.3 the banner showed warnings only, so Water's watches and advisories never reached it. General: warnings only, as before */
+export function presetBanner(id, alerts) {
+  return (alerts || []).filter((a) => a && (/warning/i.test(a.event) || presetWants(id, a.event))).sort((a, b) => presetRank(id, a.event) - presetRank(id, b.event));
 }
 
 /** the BEAM heads in the preset's order of emphasis, then the rest (for the card) */

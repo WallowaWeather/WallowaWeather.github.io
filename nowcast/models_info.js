@@ -19,7 +19,7 @@ export const MODELS = [
     long: 'Blended Early-warning Alert Model',
     maker: 'Made for Wallowa Weather',
     year: 2026,
-    licence: { name: 'Apache License 2.0', url: 'https://www.apache.org/licenses/LICENSE-2.0', file: 'licenses/Apache-2.0.txt', when: 'To be released under this licence.' },
+    licence: { name: 'Apache License 2.0', url: 'https://www.apache.org/licenses/LICENSE-2.0', file: 'licenses/Apache-2.0.txt', when: 'Released under this licence.' },   // 1.0.3: released (it said "to be released")
     source: null,
     short: 'Hail, lightning and cloudbursts for radar gaps',
     what: 'A public-good model made for this app, for the Inland Northwest\'s radar gaps, Wallowa County among them. It blends radar, satellite, lightning and NOAA\'s HRRR model to warn of storms up to 90 minutes ahead.',
@@ -44,7 +44,7 @@ export const MODELS = [
     ],
     stage: 'live',
     examples: true,   // v009: its recorded example storms show without the download
-    stageNote: 'New in this test build: BEAM runs live on this phone. The recorded example storms (with each storm’s cone) are still there.',
+    stageNote: 'BEAM runs live on this phone. Its recorded example storms (with each storm’s cone) are there too.',   // 1.0.3: no "test build"
     sizeMB: BEAM_SIZE_MB,
     tint: 'beam',
     icon: [

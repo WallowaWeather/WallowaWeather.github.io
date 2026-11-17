@@ -74,10 +74,20 @@ function hull(pts) {
   for (let i = p.length - 1; i >= 0; i--) { const q = p[i]; while (up.length >= 2 && cross(up[up.length - 2], up[up.length - 1], q) <= 0) up.pop(); up.push(q); }
   return lo.slice(0, -1).concat(up.slice(0, -1));
 }
-/** where an alert is from the place, in plain words ("12 km NW of here", "here") */
+const KM_PER_MI = 1.609344;
+/** where an alert is from the place, in plain words ("12 mi NW of here", "here"). 1.0.3: miles, like the rest of the app (it said km) */
 export function whereOf(a, lat, lon) {
   const dy = (a.centre.lat - lat) * 111.2, dx = (a.centre.lon - lon) * 111.2 * Math.cos(lat * Math.PI / 180), d = Math.hypot(dx, dy);
   if (d < 5) return 'here';
   const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'], b = (Math.atan2(dx, dy) * 180 / Math.PI + 360 + 22.5) % 360;
-  return `${Math.round(d)} km ${dirs[Math.floor(b / 45)]} of here`;
+  return `${Math.round(d / KM_PER_MI)} mi ${dirs[Math.floor(b / 45)]} of here`;
+}
+/** an app alert in words, as the card and its sheet say it: what, where from the place p, when. t0: the run's radar time; clock(ms) ->
+ *  "4:15 PM". 1.0.3: the speed in mph (it said km/h); moved here from view.js so it can be tested */
+export function alertLine(a, p, { t0 = 0, clock = (t) => new Date(t).toISOString().slice(11, 16) } = {}) {
+  const where = whereOf(a, p.lat, p.lon);
+  if (a.level === 'red') return `Damaging storm · ${where} · within ${a.startMin} min`;
+  if (a.level === 'yellow' && a.startMin != null) return `Storm on the way · ${where} · could reach here in about ${a.startMin} min (around ${clock(t0 + a.startMin * 60e3)})`;
+  if (a.level === 'yellow') { const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']; return `Storm on the way · ${where} · moving ${dirs[Math.round(a.bearing / 45) % 8]} at ${Math.round(a.speedKmh / KM_PER_MI)} mph`; }
+  return `${a.label} · ${where} · ${a.startMin === a.endMin ? `in about ${a.startMin} min` : `${a.startMin}–${a.endMin} min`}`;
 }

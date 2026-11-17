@@ -2,10 +2,14 @@
 // might see high water or flash flooding. The 149 USGS WBD 12-digit subwatersheds (HUC-12) that reach into Wallowa
 // County, whole (not clipped), from data/huc12_wallowa.json (built once: shared edges simplified once, so neighbours
 // still meet exactly). Drawn as a map overlay (level 0, under the alerts): thin blue outlines, names when zoomed in; a flagged drainage
-// is filled: amber = may see high water, red = flash flooding possible. The names are a second overlay (level 1, after the gauges and
+// is filled red: flash flooding possible. The names are a second overlay (level 1, after the gauges and
 // fires): over the alert lines, so a red-flag or warning line never runs through a name, and they step around the marks and their
 // labels (the level's overlays share one list of taken boxes per frame: api.placed). The flags come from the app's own forecast (BEAM's rain head):
-// setFlags({ huc12: { level: 'watch' | 'warning', why, until } }). Nothing is fetched but the bundled file.
+// setFlags({ huc12: { level: 'warning', why, until, since } }), made by flagsFromCells() below. Nothing is fetched but the bundled file.
+// 1.0.3: ONE flag level. v008 also drew an amber "May see high water" level that nothing ever set. The backtest tested exactly one
+// operating point for drainages, BEAM's cloudburst warning level 0.65 (its rain threshold; in the development and exam results, the
+// HUC-12 rain table has that one BEAM row, and its "equal false alarms" second threshold "cannot reach 20 %"), so the amber level is
+// gone: the map shows only what was tested.
 // v014: the active county's file (counties.js drainages) and name (county, in the sheet and the note); Wallowa's are the defaults.
 'use strict';
 import { inRings } from './lands.js';
@@ -15,7 +19,6 @@ export const DRAINAGES_CREDIT = 'Drainages: USGS WBD';
 export const drainagesNote = (county = 'Wallowa County') => `Drainages are the US Geological Survey’s Watershed Boundary Dataset 12-digit subwatersheds (HUC-12) that reach into ${county}, simplified to about 30 m for the map. Not for site-level or regulatory decisions. A drainage is flagged by this app’s own experimental heavy-rain forecast, not by the NWS or OWRD: for flood warnings, follow the National Weather Service.`;
 export const DRAINAGES_NOTE = drainagesNote();
 export const FLAG_STYLE = {
-  watch: { label: 'May see high water', fill: 'rgba(255,176,32,0.30)', edge: '#FFB020', css: '#FFB020' },
   warning: { label: 'Flash flooding possible', fill: 'rgba(255,59,48,0.34)', edge: '#FF3B30', css: '#FF3B30' },
 };
 const LINE = '#7CC8FF', HALO = 'rgba(0,22,44,0.55)';
@@ -37,11 +40,38 @@ export function decodeDrainages(j) {
   };
 }
 const inPolys = (polys, lon, lat) => polys.some((p) => inRings(p, lon, lat));
+/** the unit (decodeDrainages' shape) a point is in, or null */
+export function unitAt(units, lat, lon) {
+  for (const u of units) {
+    const b = u.box; if (lon < b[0] || lon > b[2] || lat < b[1] || lat > b[3]) continue;
+    if (inPolys(u.polys, lon, lat)) return u;
+  }
+  return null;
+}
+/** 1.0.3: the drainages a cloudburst warning reaches, flagged the way the backtest scored them: "a drainage is FLAGGED at t if the
+ *  cloudburst rule holds in any of its cells" (the backtest's protocol, section 7.1). vals: the chance per cell (Uint8, 255 =
+ *  100 %; BEAM's highest of its three half-hours) on grid { top, left, dlat, dlon, rows, cols } (the map's ~3 km lat / lon grid); a cell
+ *  at or over `level` flags the drainage its centre is in. v008-1.0.2 sampled only each warning outline's corners and middle, so a
+ *  drainage wholly inside a big warning area could stay unflagged. -> { huc12: { level: 'warning', why, until, since } } */
+export function flagsFromCells(units, vals, grid, level, { why = '', until = null, since = null } = {}) {
+  const out = {}; if (!units || !units.length || !vals || !grid) return out;
+  let w = 180, s = 90, e = -180, n = -90;
+  for (const u of units) { w = Math.min(w, u.box[0]); s = Math.min(s, u.box[1]); e = Math.max(e, u.box[2]); n = Math.max(n, u.box[3]); }
+  const thr = Math.ceil(level * 255), { top, left, dlat, dlon, rows, cols } = grid;
+  const r0 = Math.max(0, Math.floor((top - n) / dlat)), r1 = Math.min(rows - 1, Math.ceil((top - s) / dlat));
+  const c0 = Math.max(0, Math.floor((w - left) / dlon)), c1 = Math.min(cols - 1, Math.ceil((e - left) / dlon));
+  for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) {
+    if (vals[r * cols + c] < thr) continue;
+    const u = unitAt(units, top - (r + 0.5) * dlat, left + (c + 0.5) * dlon);
+    if (u && !out[u.huc12]) out[u.huc12] = { level: 'warning', why, until, since };
+  }
+  return out;
+}
 const timeOf = (t) => { if (t == null || t === '') return ''; const d = new Date(typeof t === 'number' ? t : String(t)); if (isNaN(d)) return ''; try { return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); } catch (e) { return d.toISOString().slice(11, 16) + ' UTC'; } };
 const sqmi = (km2) => { const m = km2 / SQMI; return m >= 10 ? Math.round(m).toLocaleString() : m.toFixed(1); };
 
 /** { map (createMap's), url, fetchFn, labelZ (names of every drainage from this zoom; below it only flagged ones), county (its short name) } ->
- *  { load(), setFlags(flags), flags(), at(lat, lon), listFlagged(), on(bool), isOn(), units(), byHuc(huc12), note, overlay (areas, level 0), overlays: [areas, names (level 1)] } */
+ *  { load(), setFlags(flags), flags(), at(lat, lon), hucAt(lat, lon), listFlagged(), on(bool), isOn(), units(), byHuc(huc12), note, overlay (areas, level 0), overlays: [areas, names (level 1)] } */
 export function createDrainages({ map = null, url = DRAINAGES_URL, fetchFn = (...a) => fetch(...a), labelZ = 10.4, county = 'Wallowa County' } = {}) {
   const NOTE = drainagesNote(county);
   let promise = null, data = null, byId = new Map(), flags = {}, active = false;
@@ -56,12 +86,13 @@ export function createDrainages({ map = null, url = DRAINAGES_URL, fetchFn = (..
       .catch(() => { promise = null; return []; });
     return promise;
   }
-  /** flags: { '170601050203': { level: 'watch' | 'warning', why: 'text', until: ms | ISO time } }; anything else is ignored. Replaces the old flags */
+  /** flags: { '170601050203': { level: 'warning', why: 'text', until: ms | ISO time, since: ms (the radar time of the BEAM run that
+   *  flagged it) } }; anything else is ignored (1.0.3: 'watch' too, an untested level). Replaces the old flags */
   function setFlags(f) {
     flags = {};
     for (const [k, v] of Object.entries(f || {})) {
       if (!/^\d{12}$/.test(k) || !v || !FLAG_STYLE[v.level]) continue;
-      flags[k] = { level: v.level, why: String(v.why == null ? '' : v.why).slice(0, 300), until: v.until == null ? null : v.until };
+      flags[k] = { level: v.level, why: String(v.why == null ? '' : v.why).slice(0, 300), until: v.until == null ? null : v.until, since: v.since == null ? null : v.since };
     }
     redraw();
   }
@@ -76,23 +107,18 @@ export function createDrainages({ map = null, url = DRAINAGES_URL, fetchFn = (..
       foot: f ? 'App forecast · experimental. ' + NOTE : NOTE };
   }
   /** the drainage at a point (the sheet text of a tap) or null */
-  function at(lat, lon) {
-    if (!data) return null;
-    for (const u of data.units) {
-      const b = u.box; if (lon < b[0] || lon > b[2] || lat < b[1] || lat > b[3]) continue;
-      if (inPolys(u.polys, lon, lat)) return info(u);
-    }
-    return null;
-  }
-  /** the flagged drainages, flash flooding first, then by name: [{ huc12, name, huc10name, level, label, why, until, km2, text }] */
+  function at(lat, lon) { const u = data ? unitAt(data.units, lat, lon) : null; return u ? info(u) : null; }
+  /** 1.0.3: the HUC-12 code of the drainage at a point (a stream gauge's, for the list), or null */
+  function hucAt(lat, lon) { const u = data ? unitAt(data.units, lat, lon) : null; return u ? u.huc12 : null; }
+  /** the flagged drainages by name: [{ huc12, name, huc10name, level, label, why, until, since, km2, text }] */
   function listFlagged() {
     const out = [];
     for (const [k, f] of Object.entries(flags)) {
       const u = byId.get(k); if (!u) continue;
-      out.push({ huc12: k, name: u.name, huc10name: u.huc10name, level: f.level, label: FLAG_STYLE[f.level].label, why: f.why, until: f.until, km2: u.km2,
+      out.push({ huc12: k, name: u.name, huc10name: u.huc10name, level: f.level, label: FLAG_STYLE[f.level].label, why: f.why, until: f.until, since: f.since, km2: u.km2,
         text: `${FLAG_STYLE[f.level].label}: ${u.name}${u.huc10name ? ` (${u.huc10name} watershed)` : ''}` });
     }
-    return out.sort((a, b) => (a.level === b.level ? a.name.localeCompare(b.name) : a.level === 'warning' ? -1 : 1));
+    return out.sort((a, b) => a.name.localeCompare(b.name) || a.huc12.localeCompare(b.huc12));
   }
   function on(v) {
     active = !!v; if (!map) return;
@@ -111,7 +137,7 @@ export function createDrainages({ map = null, url = DRAINAGES_URL, fetchFn = (..
     const vis = visible(api), z = api.z;
     if (!vis.length) return;
     ctx.lineJoin = 'round';
-    for (const lvl of ['watch', 'warning']) {   // the flagged fills, flash flooding on top
+    for (const lvl of Object.keys(FLAG_STYLE)) {   // the flagged fills
       const us = vis.filter((u) => flags[u.huc12] && flags[u.huc12].level === lvl); if (!us.length) continue;
       ctx.beginPath(); for (const u of us) trace(ctx, api, u); ctx.fillStyle = FLAG_STYLE[lvl].fill; ctx.fill('evenodd');
     }
@@ -120,7 +146,7 @@ export function createDrainages({ map = null, url = DRAINAGES_URL, fetchFn = (..
     const w = z < 8.5 ? 0.7 : z < 10 ? 0.9 : z < 12 ? 1.2 : 1.5;
     ctx.strokeStyle = HALO; ctx.lineWidth = w + 1.6; ctx.stroke();
     ctx.strokeStyle = LINE; ctx.lineWidth = w; ctx.stroke();
-    for (const lvl of ['watch', 'warning']) {
+    for (const lvl of Object.keys(FLAG_STYLE)) {
       const us = vis.filter((u) => flags[u.huc12] && flags[u.huc12].level === lvl); if (!us.length) continue;
       ctx.beginPath(); for (const u of us) trace(ctx, api, u); ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 4; ctx.stroke(); ctx.strokeStyle = FLAG_STYLE[lvl].edge; ctx.lineWidth = 2.2; ctx.stroke();
     }
@@ -146,12 +172,12 @@ export function createDrainages({ map = null, url = DRAINAGES_URL, fetchFn = (..
       parts.forEach((t, i) => {
         const y = p.y - th / 2 + lh / 2 + i * lh;
         ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,18,36,0.85)'; ctx.strokeText(t, p.x, y);
-        ctx.fillStyle = f ? (f.level === 'warning' ? '#FFD2CF' : '#FFE7B0') : '#E6F4FF'; ctx.fillText(t, p.x, y);
+        ctx.fillStyle = f ? '#FFD2CF' : '#E6F4FF'; ctx.fillText(t, p.x, y);
       });
     }
   }
 
-  return { load, setFlags, flags: () => Object.assign({}, flags), at, listFlagged, on, isOn: () => active, note: NOTE, units: () => (data ? data.units : []), byHuc: (k) => (byId.get(k) || null), county: () => (data ? data.county : []), overlay, overlays: [overlay, names] };
+  return { load, setFlags, flags: () => Object.assign({}, flags), at, hucAt, listFlagged, on, isOn: () => active, note: NOTE, units: () => (data ? data.units : []), byHuc: (k) => (byId.get(k) || null), county: () => (data ? data.county : []), overlay, overlays: [overlay, names] };
 }
 
 /** "Big Sheep Creek-Imnaha River" -> ["Big Sheep Creek-", "Imnaha River"]; a short name stays on one line */

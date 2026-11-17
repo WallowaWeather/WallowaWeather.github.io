@@ -290,7 +290,7 @@ export function shortText(rep, max = SHORT_MAX) {
 /** the full report (plain text, for the share sheet or a copy) */
 export function fullText(rep) {
   const L = [], w = rep.where, T = rep.town;
-  L.push('Wallowa Weather field report (test)');
+  L.push('Wallowa Weather field report');   // 1.0.3: no "(test)": the released app
   L.push(`Time: ${fullTime(rep.t)} (${utc(rep.t)})`);
   const seen = seenList(rep).map((x) => x[1]);
   L.push(`Seen: ${seen.length ? seen.join('; ') : 'not given'}`);
@@ -347,7 +347,7 @@ export function fullText(rep) {
   L.push(`GPU: ${d.gpu || d.gpuNote || 'not known'}; StormScope f16 rounding: ${d.f16 ? `${d.f16.mode}${d.f16.t ? ` (seen ${clock(d.f16.t)} ${new Date(d.f16.t).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})` : ''}` : 'not seen yet (StormScope has not run on this phone)'}`);
   if (d.models && d.models.length) L.push(`Models on this phone: ${d.models.join(', ')}`);
   L.push(`Report ${rep.id}`);
-  L.push('Experimental test report, not an official weather report or warning.');
+  L.push('A field report sent with Wallowa Weather (experimental): not an official weather report or warning.');
   return L.join('\n');
 }
 
@@ -514,7 +514,7 @@ export function fillReport(el, ctx = {}, { doc = document } = {}) {
   det.append(sum, mk('p', 'nc-sub', 'Short text'), shortP, shortN, mk('p', 'nc-sub', 'Full report'), fullP); root.append(det);
   // the tester's own past reports, on this phone only
   const past = mk('div', 'fr-past'); root.append(mk('p', 'nc-sub', 'Your reports (kept on this phone only)'), past);
-  root.append(mk('p', 'footnote fr-foot', 'Experimental test: a report is not an official weather report, and the app is never an official warning. For warnings, follow the National Weather Service and your local officials.'));
+  root.append(mk('p', 'footnote fr-foot', 'Experimental: a report is not an official weather report, and the app is never an official warning. For warnings, follow the National Weather Service and your local officials.'));
 
   const fixOf = (f) => (f.coords ? { lat: f.coords.latitude, lon: f.coords.longitude, acc: f.coords.accuracy, alt: f.coords.altitude } : { lat: f.lat, lon: f.lon, acc: f.acc, alt: f.alt });
   function getFix() {

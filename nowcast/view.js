@@ -12,7 +12,7 @@ import { decodeLines } from './lines.js';
 import { createRadar } from './radar.js';
 import { createNws, NWS_LINE, OFFICIAL } from './nws.js';
 import { codeLut, chanceLut, levelOf, typeCode, typeLut } from './colors.js';   // v018: the key's colours come through legend.js
-import { whereOf } from './stormscope/alerts.js';
+import { alertLine } from './stormscope/alerts.js';   // 1.0.3: an app alert's words (miles, mph)
 import { creditsNode } from './credits.js';   // licences and credits (Nov-05)
 import { BASEMAPS } from './basemaps.js';   // Wallowa Weather
 import { PARCELS_MIN_Z } from './parcels.js';   // Wallowa Weather: lot lines
@@ -29,10 +29,10 @@ import { radarLine, radarAge, clockShort } from './summary.js';
 import { recentRun, getRun } from './store.js';
 import { icon, weatherIcon } from './icons.js';
 import { DGMR } from './model.js';
-import { SKILL } from './skill.js';
+import { accuracyOf } from './skill.js';   // 1.0.3: the accuracy of the model on the map
 import { createClouds, shownWords, CLOUD_CREDIT, SAT_CREDIT } from './clouds.js';
 import { postBox, ringsView, nwsWords, appWarningWords, publicPicture } from './post.js';   // v020: warnings shared as public posts
-import { createBeamPlayer, HEADS, warnAreas } from './beam.js';   // v008: BEAM's example storms; v009: the same look live
+import { createBeamPlayer, HEADS } from './beam.js';   // v008: BEAM's example storms; v009: the same look live
 import { createRainPlayer, fillExamplesSheet } from './examples.js';   // v012: DGMR / StormScope example storms
 import { BIN_WORDS, HEAD_ORDER, LIST_HEADS, chanceAt, liveZones, unionBins, flagWords, liveGrid } from './beam_live.js';   // v009: BEAM live on this phone
 import { MODELS } from './models_info.js';   // v008: the three models (what each does, strengths, weaknesses)
@@ -40,8 +40,9 @@ import { createModelPicker } from './modelpick.js';   // v008: the model chip ab
 import { createGearButton, buildSettings } from './settings.js';   // v008: Settings under a gear, apart from Layers
 import { createFreshness } from './cadence.js';   // Nov-08: "Keep forecasts fresh" (Off / 10 / 30 / Wi-Fi 10, cellular 30), BEAM + the rain under it
 import { createMine } from './mine.js';
-import { presetLayers, presetMatching, presetHazards, presetRank, infoNode, createPresetPicker } from './presets.js';   // v008: General / Water / Fire / Farm
-import { DRAINAGES_CREDIT } from './drainages.js';   // v008: HUC-12 drainages (water)
+import { presetOf, presetLayers, presetMatching, presetHazards, presetBanner, infoNode, createPresetPicker } from './presets.js';   // v008: General / Water / Fire / Farm
+import { createDrainList, drainRows, countWords } from './drainlist.js';   // 1.0.3: "Drainages at risk", the list of the flagged drainages
+import { DRAINAGES_CREDIT, flagsFromCells } from './drainages.js';   // v008: HUC-12 drainages (water); 1.0.3: flagged from BEAM's warned cells
 import { GAUGES_CREDIT, GAUGES_NOTE } from './gauges.js';   // v008: USGS stream gauges (water)
 import { FIRES_CREDIT, FIRES_NOTE } from './fires.js';   // v008: current fires (fire)   // v008: My layers - shapes and highlighted lots the person draws, on this phone only   // v008: the properties in a warning, a list that slides in from the right
 import { createLegend, rainSpec, snowSpec, chanceSpec, beamSpec, fieldSpec } from './legend.js';   // v018: the key across the top (full-width bars, units first)
@@ -76,7 +77,7 @@ export function createNowcastView(app) {
   const radar = app.radar || createRadar({ diag: app.diag }), nws = createNws();
   const S = { place: null, av: null, plan: null, frames: new Map(), idx: -1, items: [], playing: false, timer: 0, run: null, running: null, open: false,
     // v019: offline (Wallowa's saved map) starts off - saved only when chosen; an older phone's is kept (keptKnown, below)
-    layers: Object.assign({ radar: true, nowcast: true, type: true, warnings: true, clouds: false, parcels: false, roads: true, lands: true, gps: false, offline: false, drainages: false, gauges: false, fires: false, firewx: false, lightning: false, beamHail: false, beamLightning: false, beamRain: false, fan: false }, lsGet().layers || {}, { radar: true }), mode: lsGet().mode || 'rate', thr: lsGet().thr || 4,
+    layers: Object.assign({ radar: true, nowcast: true, type: true, warnings: true, clouds: false, parcels: false, roads: true, lands: true, gps: false, offline: false, drainages: false, gauges: false, fires: false, firewx: false, lightning: false }, lsGet().layers || {}, { radar: true }), mode: lsGet().mode || 'rate', thr: lsGet().thr || 4,
     // v018 review: a saved choice that is not one of the app's (tampered, or another app on the same origin) falls back to the default
     members: [1, 4, DGMR.ensemble.members].includes(lsGet().members) ? lsGet().members : DGMR.ensemble.members, wide: !!lsGet().wide,
     loopMin: [30, 60, 90].includes(lsGet().loopMin) ? lsGet().loopMin : 60, model: lsGet().model || app.defaultModel || 'dgmr', basemap: (own(BASEMAPS, lsGet().basemap) && lsGet().basemap) || app.defaultBasemap || null, ssFresh: lsGet().ssFresh !== false, ssStat: null, warnings: [], alerts: [], places: null, loadedAt: 0, err: null };
@@ -103,7 +104,10 @@ export function createNowcastView(app) {
   let leaving = false; addEventListener('pagehide', () => { leaving = true; if (radar.abort) radar.abort(); });   // a reload or a closed page: its fetches stop, and are not failures
   // ---------------------------------------------------------------------------------------------- the DOM
   const canvas = mk('canvas', 'nc-map'); canvas.setAttribute('aria-label', 'Rain map');
-  const top = mk('div', 'nc-top'), back = btn('nc-round nc-back', null, 'back'); back.setAttribute('aria-label', 'Home Screen');
+  const top = mk('div', 'nc-top'), back = btn('nc-round nc-back', null, 'back'); back.setAttribute('aria-label', app.homeLabel || 'Home Screen');
+  // 1.0.3: the "<" shows only where the host has a screen to go back to (app.homeLabel names it). The standalone app has none: its "<",
+  // labelled "Home Screen", opened Settings, the same as the gear under it
+  back.hidden = !app.homeLabel;
   // v018: the key across the top, gutter to gutter (legend.js): Rain and Snow always, the active model's key under them (v010), the forecast map's bar
   const LG = createLegend({ dark }), legend = LG.el;
   top.append(legend);
@@ -149,6 +153,9 @@ export function createNowcastView(app) {
   let county = null, CL = null, lotCounter = null, affected = null;
   // v008: the water / fire / farm layers (each fetches only while its switch is on); v014: the active county's
   let drains = null, gaugesL = null, firesL = null, fwx = null, lands = null;
+  // 1.0.3: "Drainages at risk" (drainlist.js): its button under the properties one, its panel over the map; a row frames its drainage
+  const dlist = createDrainList({ onPick: (r) => frameDrainage(r.huc12) });
+  right.append(dlist.button); root.append(dlist.panel);
   function activeCounty() {
     if (!CTY) return null;
     const p = S.place || lsGet().place, f = S.fix || S.pos;
@@ -158,21 +165,36 @@ export function createNowcastView(app) {
     if (CL) { CL.destroy(); map.set('parcels', []); map.set('lot', null); map.set('lands', []); }
     county = c; BL.zkey = '';
     CL = countyLayers(c, { map, nws, basemap: !!BM(), places: () => S.places, onParcels: () => { if (parcels && S.layers.parcels) map.set('parcels', parcels.lots()); },
-      onLot: (l) => { if (l.lat != null) map.center(l.lat, l.lon, Math.max(map.state.z, 16)); } });
+      onLot: (l) => { if (l.lat != null) map.center(l.lat, l.lon, Math.max(map.state.z, 16)); }, onGauges: () => syncDrainList() });
     ({ parcels, drains, gauges: gaugesL, fires: firesL, fwx, lands, lots: lotCounter, affected } = CL);
-    if (affected) { right.append(affected.button); root.append(affected.panel); }   // v008: under Locate; the panel slides in from the right
+    if (affected) { right.insertBefore(affected.button, dlist.button); root.append(affected.panel); }   // v008: under Locate; the panel slides in from the right (1.0.3: the drainages' button under it)
   }
   if (CTY) pointAt(activeCounty());
   /** v014: the place (or my location) is in another county: its layers replace the last one's -> true if it changed */
   function syncCounty() {
     const c = activeCounty(); if (!c || c === county) return false;
-    pointAt(c); v008On(); parcelsOn(); landsOn(); beamDrains(); syncAffected();
+    pointAt(c); v008On(); parcelsOn(); landsOn(); beamDrains(); syncAffected(); syncDrainList();
     if (app.diag) app.diag('county', { id: c.id });
     return true;
   }
   if (CTY) loadBoundaries({ list: CTY }).then(() => { if (syncCounty() && S.open) render(); });   // the outlines tell apart counties whose boxes overlap
   const lotsText = (r) => (CL ? CL.words.lots(r) : lotsSentence(r));
-  function v008On() { if (drains) drains.on(!!S.layers.drainages); if (gaugesL) gaugesL.on(!!S.layers.gauges); if (firesL) firesL.on(!!S.layers.fires); if (fwx) fwx.on(!!S.layers.firewx); }
+  function v008On() { if (drains) drains.on(!!S.layers.drainages); if (gaugesL) gaugesL.on(!!S.layers.gauges); if (firesL) firesL.on(!!S.layers.fires); if (fwx) fwx.on(!!S.layers.firewx); syncDrainList(); }
+  /** 1.0.3: the "Drainages at risk" list follows the flags (with the Drainages layer on) and the gauges' newest readings */
+  function drainListRows() {
+    if (!drains || !S.layers.drainages) return [];
+    return drainRows(drains.listFlagged(), gaugesL && S.layers.gauges ? gaugesL.list() : null, (la, lo) => drains.hucAt(la, lo));
+  }
+  function syncDrainList() { dlist.set(drainListRows(), { gaugesOn: !!(gaugesL && S.layers.gauges) }); }
+  /** 1.0.3: a drainage from the list fills the map's free room (between the key and the card) */
+  function frameDrainage(huc12) {
+    const u = drains && drains.byHuc(huc12); if (!u) return;
+    const sp = exSpace(), [w, s, e, n] = u.box;
+    map.fit(s, w, n, e, 28); const st = map.state;
+    const avail = Math.max(120, sp.h - sp.top - sp.bottom), z = st.z + Math.log2(Math.min(1, avail / Math.max(1, sp.h - 56)));
+    map.center(st.lat, st.lon, z);
+    const mid = map.toLatLon(sp.w / 2, sp.h / 2 + (sp.bottom - sp.top) / 2); map.center(mid.lat, mid.lon, z);
+  }
   setTimeout(v008On, 0);
   function parcelsOn() { if (!parcels) return; if (S.layers.parcels) { const m = map.state; parcels.update(map.view(), m.z); map.set('parcels', parcels.lots()); } else { map.set('parcels', []); map.set('lot', null); } creditLine(); }
   // v006: public land, roads, my location, and the properties in an alert's zone (v014: the county's, above)
@@ -180,7 +202,7 @@ export function createNowcastView(app) {
   function roadsOn() { if (!BM()) return; map.set('roads', S.layers.roads ? ROADS_SOURCE : null); creditLine(); }
   let gpsCentred = false;
   const gps = createGps({ onError: (t) => app.toast(t), onChange: (m) => {
-    map.set('me', m); locB.classList.toggle('on', gps.on);
+    S.me = m; map.set('me', S.example ? null : m); locB.classList.toggle('on', gps.on);   // 1.0.3: no dot of today over an example storm
     S.fix = m ? { lat: m.lat, lon: m.lon } : null; if (m && CTY && !(S.place && cAt(S.place.lat, S.place.lon))) syncCounty();   // v014
     if (!m && !gps.on && S.layers.gps) { S.layers.gps = false; saveLayers(); }   // location refused: the switch goes back off
     if (m && !gpsCentred) { gpsCentred = true; map.center(m.lat, m.lon, Math.max(map.state.z, 12)); }
@@ -331,14 +353,8 @@ export function createNowcastView(app) {
       });
     }
   }
-  /** v006: an app alert in words, as on the card: what, where from here, when */
-  function alertText(a, p) {
-    const where = whereOf(a, p.lat, p.lon);
-    if (a.level === 'red') return `Damaging storm · ${where} · within ${a.startMin} min`;
-    if (a.level === 'yellow' && a.startMin != null) return `Storm on the way · ${where} · could reach here in about ${a.startMin} min (around ${clock(S.run.t0 + a.startMin * 60e3)})`;
-    if (a.level === 'yellow') { const dirs = ['N','NE','E','SE','S','SW','W','NW']; return `Storm on the way · ${where} · moving ${dirs[Math.round(a.bearing / 45) % 8]} at ${a.speedKmh} km/h`; }
-    return `${a.label} · ${where} · ${a.startMin === a.endMin ? `in about ${a.startMin} min` : `${a.startMin}–${a.endMin} min`}`;
-  }
+  /** v006: an app alert in words, as on the card: what, where from here, when (1.0.3: stormscope/alerts.js alertLine, in miles and mph) */
+  function alertText(a, p) { return alertLine(a, p, { t0: S.run ? S.run.t0 : 0, clock }); }
   const sentence = (t) => { t = String(t || '').trim(); return t ? t.charAt(0).toUpperCase() + t.slice(1) + (/[.!?]$/.test(t) ? '' : '.') : ''; };
   /** v020: a warning as a public post (post.js): its words, and a picture framing the warning's area - no GPS dot, no place mark */
   function warnPost({ words, rings, title, sub, name }) {
@@ -421,13 +437,10 @@ export function createNowcastView(app) {
     onAreas: (areas, head, frame) => {
       paintLegend();   // v010: the example's hazard in the top bar
       beamZones = head && head.label === 'Hail' && frame ? areas.slice(0, 6).map((a, i) => ({ id: `beam-hail-${frame.t}-${i}`, label: 'Hail possible (BEAM example)', color: '#C04CFF', level: 'red', rings: [a.ring], until: frame.issue + 90 * 60e3, source: 'beam' })) : [];
-      if (drains) {   // Cloudburst: the drainages its warning areas reach (sampled: the outline's corners and middle)
-        const flags = {};
-        if (head && head.label === 'Cloudburst' && frame) for (const a of areas.slice(0, 12)) {
-          const r = a.ring, mid = r.reduce((m, p) => [m[0] + p[0] / r.length, m[1] + p[1] / r.length], [0, 0]);
-          for (const [lo, la] of r.concat([mid])) { const d = drains.at(la, lo); if (d && d.huc12) flags[d.huc12] = { level: 'warning', why: 'Cloudburst possible (BEAM example storm)', until: frame.issue + 90 * 60e3 }; }
-        }
-        drains.setFlags(flags);
+      if (drains) {   // Cloudburst: the drainages with a warned cell (1.0.3: every cell, as the backtest scored it; drainages.js flagsFromCells)
+        const L = beam.layers.state, on = head && head.label === 'Cloudburst' && frame && L.vals && L.grid;
+        drains.setFlags(on ? flagsFromCells(drains.units(), L.vals, L.grid, HEADS.rain.warn, { why: 'Cloudburst possible (BEAM example storm)', until: frame.issue + 90 * 60e3, since: frame.t }) : {});
+        syncDrainList();
       }
       syncAffected();
     } });
@@ -467,11 +480,15 @@ export function createNowcastView(app) {
   function exampleOn(kind) {
     closeSheet(); stop(); S.example = kind; beamLayerOff(); fields.show(null);
     map.set('rain', null); map.set('nowcast', null); map.set('clouds', null); map.set('qc', null); S.cloud = null;
+    // 1.0.3: today's live layers go too - stream gauges, current fires, fire weather, the GPS dot, today's drainage flags (the drainages'
+    // outlines stay: they are the ground, and a BEAM example's Cloudburst flags them for its own storm). My layers stay: the person's own
+    if (gaugesL) gaugesL.on(false); if (firesL) firesL.on(false); if (fwx) fwx.on(false); if (drains) drains.setFlags({});
+    map.set('me', null); syncDrainList();
     exMode(true);
   }
   function exampleOff() {
     if (!S.example) return;
-    stop(); S.example = null; exMode(false); beamDrains();
+    stop(); S.example = null; exMode(false); v008On(); map.set('me', S.me || null); beamDrains();   // 1.0.3: today's live layers back
     if (S.items[S.idx]) show(S.idx); else renderTl();
     render(); paintLegend();
     const m = map.state; moved({ lat: m.lat, lon: m.lon, z: m.z });   // the 1 km radar cut follows where the example left the map
@@ -504,7 +521,7 @@ export function createNowcastView(app) {
     const c = canvas.getBoundingClientRect(), out = [];
     // v018 merge: the strip above the key is the phone's status bar (the clock, the notch): no city names under it
     { const lg = legend.getBoundingClientRect(); if (lg.height && lg.top > c.top) out.push({ x: 0, y: 0, w: c.width, h: lg.top - c.top }); }
-    for (const el of [back, legend, layersB, gearB, searchB, locB, card, TB.el, fab, picker.chip, affected && affected.button, root.querySelector('.ww-foot'), ...root.querySelectorAll('.mn-bar')].filter(Boolean)) { const r = el.getBoundingClientRect(); if (r.width && r.height) out.push({ x: r.left - c.left, y: r.top - c.top, w: r.width, h: r.height }); }
+    for (const el of [back, legend, layersB, gearB, searchB, locB, card, TB.el, fab, picker.chip, affected && affected.button, dlist.button, root.querySelector('.ww-foot'), ...root.querySelectorAll('.mn-bar')].filter(Boolean)) { const r = el.getBoundingClientRect(); if (r.width && r.height) out.push({ x: r.left - c.left, y: r.top - c.top, w: r.width, h: r.height }); }
     return out;
   }
   /** v018: the bottom stack, from the copyright bar up - the time bar, the card, the chip and the quick button - and the buttons under the
@@ -786,19 +803,14 @@ export function createNowcastView(app) {
     if (BL.zkey !== key) { BL.zkey = key; BL.zones = LIST_HEADS.flatMap((h) => liveZones(BL.frame, h, county.bbox)); }
     return BL.zones;
   }
-  /** Cloudburst shown: the drainages its live warning areas reach (as the example storms flag them); an open example sets its own */
+  /** Cloudburst shown: the drainages its live warning reaches (as the example storms flag them); an open example sets its own. 1.0.3:
+   *  a drainage is flagged when any of its cells reaches BEAM's cloudburst warning level in any half-hour - the rule the backtest scored
+   *  (drainages.js flagsFromCells) - since the radar time of the run (the list's "since") until 90 minutes after its issue */
   function beamDrains() {
     if (!drains || beam.active) return;
-    const flags = {}, f = BL.frame;
-    if (f && B && S.model === 'beam' && S.layers.nowcast && BL.head === 'rain' && beamFresh() && county) {
-      const [s0, w0, n0, e0] = county.bbox, until = f.issue + 90 * 60e3;   // v014: the active county's
-      const areas = warnAreas(unionBins(f, 'rain'), f.grid, HEADS.rain.warn).filter((a) => a.ring.some(([lo, la]) => la >= s0 && la <= n0 && lo >= w0 && lo <= e0));
-      for (const a of areas.slice(0, 12)) {
-        const r = a.ring, mid = r.reduce((m, q) => [m[0] + q[0] / r.length, m[1] + q[1] / r.length], [0, 0]);
-        for (const [lo, la] of r.concat([mid])) { const d = drains.at(la, lo); if (d && d.huc12) flags[d.huc12] = { level: 'warning', why: 'Cloudburst possible (BEAM)', until }; }
-      }
-    }
-    drains.setFlags(flags);
+    const f = BL.frame, on = f && B && S.model === 'beam' && S.layers.nowcast && BL.head === 'rain' && beamFresh() && county;
+    drains.setFlags(on ? flagsFromCells(drains.units(), unionBins(f, 'rain'), f.grid, HEADS.rain.warn, { why: 'Cloudburst possible (BEAM)', until: f.issue + 90 * 60e3, since: f.t0 }) : {});
+    syncDrainList();
   }
   /** a BEAM run came back (beam_live.js 'result'): its maps replace the last ones; a run still waiting for inputs keeps them */
   function onBeamResult({ frame, info }) {
@@ -815,9 +827,11 @@ export function createNowcastView(app) {
     if (S.open) render();
   }
   if (B) B.model().on('result', onBeamResult);
+  /** 1.0.3: BEAM can't run on this phone (WebGPU without a graphics adapter): app.beam.cap(), null until asked */
+  const beamCant = () => { const c = B && B.cap ? B.cap() : null; return c && !c.supported ? c : null; };
   /** one BEAM run through the queue (manual: the button; else the 10-minute refresh or a retry for inputs not posted yet) */
   async function beamRun(manual = false) {
-    if (!B || BL.run || S.model !== 'beam' || !S.open) return;
+    if (!B || BL.run || S.model !== 'beam' || !S.open || beamCant()) return;
     if (!B.ready()) { if (manual) offerBeamDownload(); return; }
     const m = B.model(), t0 = await m.newestT0();
     const have = BL.frame && BL.frame.t0 >= t0 && !(BL.info && BL.info.pending) && !BL.err;
@@ -870,7 +884,7 @@ export function createNowcastView(app) {
    *  while hidden, offline, or a run is going (its end asks again) */
   async function scheduleBeam() {
     clearTimeout(BL.timer); BL.timer = 0; BL.next = null; const my = ++BL.seq;
-    if (!B || !S.open || S.model !== 'beam' || !B.ready() || BL.run || hiddenNow() || fresh.offline()) return;
+    if (!B || !S.open || S.model !== 'beam' || !B.ready() || BL.run || hiddenNow() || fresh.offline() || beamCant()) return;   // 1.0.3: never retried where it can't run
     const m = B.model(); let at = null;
     if (BL.info && BL.info.pending && BL.info.retryAt && BL.tries < 3) { at = Date.parse(BL.info.retryAt) + 3e3; BL.tries++; }
     else if (fresh.everyMin()) {
@@ -908,21 +922,22 @@ export function createNowcastView(app) {
   addEventListener('pagehide', () => beamRelease());
   if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (document.hidden) { clearTimeout(BL.timer); BL.timer = 0; BL.next = null; BL.seq++; if (!BL.run && B) { try { B.release(); } catch (e) { /* */ } } } else freshResume(); });
   function offerBeamDownload() {
-    if (!B) return;
+    if (!B || beamCant()) return;
     openSheet((b) => {
       b.append(mk('h2', 'nc-h', 'BEAM'));
       b.append(mk('p', null, `BEAM, the Blended Early-warning Alert Model, was made for this app: the chance of lightning, hail, cloudbursts and strong storm cores for the next 90 minutes, from NOAA's radar, the GOES-West satellite and lightning mapper, and the HRRR model, worked out on this phone: ${MB(B.size())}, downloaded once.`));
-      b.append(mk('p', 'footnote', 'Each run reads a few MB of NOAA data. Made for this app as a public-good project, to be released under the Apache License 2.0. Experimental, not a National Weather Service warning.'));
+      b.append(mk('p', 'footnote', 'Each run reads a few MB of NOAA data. Made for this app as a public-good project, released under the Apache License 2.0. Experimental, not a National Weather Service warning.'));
       const d = B.dl(), go = btn('nc-btn', d && d.running ? `Downloading · ${Math.floor(100 * (d.pct || 0))}%` : `Download · ${MB(B.size())}`);
       go.disabled = !!(d && d.running); go.onclick = () => { B.download(); closeSheet(); render(); }; b.append(go);
     }, 'download');
   }
   /** the card while BEAM is picked: what it says here, its flags, the hazard, Run BEAM now, the 10-minute refresh, the example storms */
-  function renderBeam(p, wl) {
+  function renderBeam(p, seeAbove) {
     const ex = btn('nc-btn ghost', 'See example storms'); ex.onclick = () => openBeamExamples();
     noteEl.textContent = 'BEAM · lightning, hail, cloudbursts and strong cores, 90 minutes ahead · Experimental';
     if (!B) { sumEl.textContent = 'BEAM will run on this phone. Until then: see what it showed on real storms near Wallowa County.'; action.append(ex); return; }
     const col = mk('div', 'bm-live'), row = mk('div', 'bm-live-btns'); action.append(col);
+    { const c = beamCant(); if (c) { sumEl.textContent = `BEAM can’t run on this phone (${c.reason}). See what it showed on real storms near Wallowa County.`; row.append(ex); col.append(row); return; } }   // 1.0.3: as DGMR and StormScope say it
     if (!B.ready()) {
       const d = B.dl(), g = btn('nc-btn', d && d.running ? `Downloading · ${Math.floor(100 * (d.pct || 0))}%` : `Get BEAM · ${MB(B.size()).replace(' ', ' ')}`);
       g.disabled = !!(d && d.running); g.onclick = () => offerBeamDownload(); row.append(g, ex); col.append(row);
@@ -932,7 +947,7 @@ export function createNowcastView(app) {
     const f = beamFresh() ? BL.frame : null;
     card.classList.toggle('bm-card', !!f);   // the time control first, BEAM's controls under it
     sumEl.textContent = f ? beamHere(f, p) : 'BEAM forecasts lightning, hail, cloudbursts and strong cores for the next 90 minutes over the Inland Northwest, worked out on this phone.';
-    if (wl.length) sumEl.textContent += ' Follow the warning above.';
+    sumEl.textContent += seeAbove;
     if (BL.frame) { const age = Math.round((Date.now() - BL.frame.issue) / 60e3); noteEl.textContent = `BEAM · ${clock(BL.frame.t0)} radar · ${age > 1 ? `${age} min old` : 'just now'}${f ? '' : ': too old, run it again'} · Experimental`; }
     for (const x of flagWords(BL.info, { clock })) col.append(mk('p', 'nc-flag bm-flag ' + x.kind, x.text));
     if (BL.err) col.append(mk('p', 'nc-flag bm-flag error', BL.err));
@@ -944,6 +959,8 @@ export function createNowcastView(app) {
         chips.append(c);
       }
       col.append(chips);
+      const nd = dlist.rows().length;   // 1.0.3: the flagged drainages, a tap from the card
+      if (nd) { const dl = btn('nc-link bm-drains', `${countWords(nd)}: see the list`); dl.onclick = () => dlist.open(); col.append(dl); }
       const it = S.items[S.idx];
       if (beamK(it) == null) { const go = btn('nc-btn ghost sm', 'Show BEAM on the map'); go.onclick = () => { const fi = S.items.findIndex((x) => beamK(x) != null); if (fi >= 0) { stop(); show(fi); render(); } }; col.append(go); }
     }
@@ -1111,8 +1128,9 @@ export function createNowcastView(app) {
     radarEl.replaceChildren(icon('refresh', 'nc-ic sm', 16), mk('span', null, newest ? radarAge(newest) : S.err ? 'radar not reached' : 'radar…'));
     radarEl.setAttribute('aria-label', `${newest ? radarLine(newest) : 'Radar'}. Load the newest radar`);
     radarEl.classList.toggle('stale', !!newest && Date.now() - newest > 15 * 60e3);
-    // official warnings first
-    const pr = S.preset || 'general', wl = (S.alerts || []).filter((a) => /warning/i.test(a.event)).sort((a, b) => presetRank(pr, a.event) - presetRank(pr, b.event));   // v008: the preset's warnings first
+    // official warnings first; 1.0.3: under a preset, its own alerts too (Water: flood watches, advisories, outlooks, statements), in
+    // the preset's order (presets.js presetBanner); General keeps warnings only
+    const wl = presetBanner(S.preset || 'general', S.alerts); S.banner = wl;
     warn.hidden = !wl.length;
     if (wl.length) { warn.replaceChildren(icon('alert', 'nc-ic sm', 18), mk('b', null, wl[0].event), mk('span', null, wl[0].ends ? ` until ${clock(Date.parse(wl[0].ends))}` : ''), mk('span', 'nc-more', wl.length > 1 ? ` · +${wl.length - 1} more` : '')); warn.style.setProperty('--wc', wl[0].color); }
     action.textContent = ''; noteEl.textContent = ''; sumEl.textContent = '';
@@ -1123,7 +1141,9 @@ export function createNowcastView(app) {
       const r = S.running; sumEl.textContent = r.text || 'Nowcasting…';
       const bar = mk('div', 'nc-bar'), i = mk('i'); i.style.transform = `scaleX(${(r.frac || 0).toFixed(3)})`; bar.append(i); action.append(bar); return;
     }
-    if (S.model === 'beam') { renderBeam(p, wl); return; }   // v008: the examples; v009: BEAM live
+    // 1.0.3: the card points at the banner in the banner's own terms (a watch or an advisory is not a warning)
+    const seeAbove = !wl.length ? '' : wl.some((a) => /warning/i.test(a.event)) ? ' Follow the warning above.' : ' See the NWS alert above.';
+    if (S.model === 'beam') { renderBeam(p, seeAbove); return; }   // v008: the examples; v009: BEAM live
     card.classList.remove('bm-card');
     if (newest && Date.now() - newest > 15 * 60e3) { sumEl.textContent = `The newest NOAA radar is ${Math.round((Date.now() - newest) / 60e3)} minutes old, so no nowcast runs now. Try again in a few minutes.`; return; }
     const s = S.run ? summaryAt(S.run, p.lat, p.lon) : null;
@@ -1131,11 +1151,11 @@ export function createNowcastView(app) {
       sumEl.textContent = s.text;
       const age = Math.round((Date.now() - S.run.t0) / 60e3);
       noteEl.textContent = [`Nowcast from radar ${clock(S.run.t0)}${age > 10 ? ` (${age} min ago)` : ''} · ${S.run.members} run${S.run.members > 1 ? 's' : ''}${S.run.precision === 'int8' ? ' · low-memory model' : ''}`, s.snowNote || ''].filter(Boolean).join(' · ');
-      if (wl.length) sumEl.textContent += ' Follow the warning above.';
+      sumEl.textContent += seeAbove;
       if (S.run.ss && S.run.ss.timing) {   // PILOT: how long it took, and what only StormScope sees
         const T = S.run.ss.timing, sec = (ms) => `${(ms / 1000).toFixed(ms < 10000 ? 1 : 0)} s`;
         const data = T.cached ? `layers kept fresh${T.mb ? ` (+${T.mb.toFixed(1)} MB new, ${sec(T.dataMs)})` : ''}` : `data ${T.mb.toFixed(1)} MB in ${sec(T.dataMs)}`;
-        noteEl.textContent = app.area ? `StormScope from radar ${clock(S.run.t0)}` : `StormScope (pilot) from radar ${clock(S.run.t0)} · total ${sec(T.totalMs)}: ${data}, prepare ${sec(T.prepMs)}, load ${sec(T.loadMs)}, model ${sec(T.modelMs)} (${S.run.ss.stepMs.length} frames)`; // Wallowa Weather: short; the timings are in Diagnostics
+        noteEl.textContent = app.area ? `StormScope from radar ${clock(S.run.t0)}` : `StormScope from radar ${clock(S.run.t0)} · total ${sec(T.totalMs)}: ${data}, prepare ${sec(T.prepMs)}, load ${sec(T.loadMs)}, model ${sec(T.modelMs)} (${S.run.ss.stepMs.length} frames)`; // Wallowa Weather: short; the timings are in Diagnostics
         for (const f of S.run.ss.flags || []) action.append(mk('p', 'nc-flag ' + f.kind, f.text));
         if (S.run.ss.typeInfo) noteEl.textContent += ' · Colours: blue-white snow, purple sleet, pink freezing rain (type from NOAA HRRR)';
         const levelOrder = { red: 0, yellow: 1, orange: 2 };
@@ -1155,7 +1175,7 @@ export function createNowcastView(app) {
             e.append(sb); action.append(e);
           }
         }
-      } else if (S.run.ss && S.run.ready < S.run.spec.frames) noteEl.textContent = `StormScope (pilot) · ${S.run.ready} of ${S.run.spec.frames} frames so far`;
+      } else if (S.run.ss && S.run.ready < S.run.spec.frames) noteEl.textContent = `StormScope · ${S.run.ready} of ${S.run.spec.frames} frames so far`;
       const again = btn('nc-btn ghost', 'Nowcast again'); again.onclick = () => nowcast(); if (age > 6) action.append(again);
       return;
     }
@@ -1170,11 +1190,11 @@ export function createNowcastView(app) {
       sumEl.textContent = 'The nowcast runs on this phone: a one-time model download first.'; return;
     }
     const b = btn('nc-btn', 'Nowcast here'); b.onclick = () => nowcast(); action.append(b, rainExBtn());   // v012: + the example storms
-    sumEl.textContent = wl.length ? 'Follow the warning above.' : 'The next 90 minutes of rain here, worked out on this phone.';
+    sumEl.textContent = seeAbove ? seeAbove.trim() : 'The next 90 minutes of rain here, worked out on this phone.';
     if (S.model === 'stormscope' && S.ssStat) noteEl.textContent = layersLine(S.ssStat);
   }
   radarEl.onclick = () => loadRadar(true);
-  warn.onclick = () => openAlert();
+  warn.onclick = () => openAlert((S.banner || [])[0]);   // 1.0.3: the alert the banner names (a watch too, under a preset)
   infoB.onclick = () => openInfo();
   back.onclick = () => app.home();
 
@@ -1210,7 +1230,7 @@ export function createNowcastView(app) {
       S.running = null; render();
       const code = e && e.code;
       sumEl.textContent = code === 'STALE' ? `The newest NOAA radar is ${Math.round(e.ageMin || 16)} minutes old, so no nowcast runs now. Try again in a few minutes.`
-        : code === 'RADAR_MISSING' ? 'NOAA has no recent radar right now, so no nowcast runs.' : code === 'OUT_OF_MEMORY' ? 'This phone ran out of graphics memory for the nowcast. The smaller model (Settings › Models) needs less.'
+        : code === 'RADAR_MISSING' ? 'NOAA has no recent radar right now, so no nowcast runs.' : code === 'OUT_OF_MEMORY' ? (e.lowMem ? 'This phone ran out of graphics memory for the full nowcast model, so it uses the smaller 8-bit model from now on: get it on this card (or Settings › DGMR).' : 'This phone ran out of graphics memory for the nowcast. Close other apps and try again.')
         : code === 'ABORTED' || (e && e.name === 'AbortError') ? 'Stopped.' : `The nowcast stopped: ${String((e && e.message) || e).slice(0, 120)}`;
       fold.setKey(sumEl.textContent);
   }
@@ -1245,11 +1265,13 @@ export function createNowcastView(app) {
       credits: () => creditsNode(), notes: [parcels ? CL.words.note : '', lands ? LANDS_NOTE : '', BM() ? ROADS_NOTE : ''].filter(Boolean), counties: countyHooks(),
       fresh: B || (app.ssListed && app.ssListed()) ? { value: () => fresh.short(), sub: 'BEAM, the rain under it, StormScope’s layers', build: (el) => fresh.fill(el, { rain: !!app.ready() }) } : undefined })); }, 'settings');   // Nov-08
   }
-  /** v008: a preset sets a group of layers at once (radar, location and offline stay as they are) */
+  /** v008: a preset sets a group of layers at once (radar, location and offline stay as they are); 1.0.3: and its model, when it names
+   *  one (Water: BEAM, whose Cloudburst flags the drainages - picked before the hazard, so the flags follow both) */
   function applyPreset(id) {
     S.layers = presetLayers(S.layers, id); S.preset = id;
     if (S.layers.nowcast) { S.fmap = 'precip'; S.fmapOn = true; syncFields(); }   // v018: one forecast map at a time
     saveLayers();
+    const pm = presetOf(id).model; if (pm && pm !== S.model) pickModel(pm);
     BL.head = presetHazards(id)[0]; lsSet({ beamHead: BL.head }); beamDrains();   // v009
     parcelsOn(); landsOn(); roadsOn(); loadWarnings(); v008On();
     if (S.layers.clouds) cloudsOn(); else { map.set('clouds', null); S.cloud = null; }
@@ -1301,7 +1323,7 @@ export function createNowcastView(app) {
    *  location, the county map saved on this phone (Settings › Counties for the others) */
   function mapDetails(b) {
     let pp = null;
-    const v8sw = (k, label, sub) => sw(label, S.layers[k], (v) => { S.layers[k] = v; S.preset = presetMatching(S.layers); saveLayers(); v008On(); if (pp) pp.setCurrent(S.preset); render(); }, sub);
+    const v8sw = (k, label, sub) => sw(label, S.layers[k], (v) => { S.layers[k] = v; S.preset = presetMatching(S.layers); saveLayers(); v008On(); if (pp) pp.setCurrent(S.preset); render(); }, sub);   // v008On: 1.0.3 the drainages list too
     if (BM()) {
       pp = createPresetPicker({ current: presetMatching(S.layers), onPick: (p) => applyPreset(p.id) }); b.append(pp);   // v008: the presets
       b.append(mk('p', 'nc-sub', 'Map'));
@@ -1315,7 +1337,7 @@ export function createNowcastView(app) {
       else if (county) b.append(notYet('Lot lines', CL.words.layer));   // v014: a county whose lot lines aren't in the app (terms unclear)
       { const mySec = mk('div'); b.append(mySec); mine.listInto(mySec); }   // v008: My layers
       b.append(mk('p', 'nc-sub', 'Water, fire and farm'));
-      if (drains) b.append(v8sw('drainages', 'Drainages', 'The HUC-12 drainages that reach into the county (USGS). A storm’s heavy rain flags the ones that may see high water'));
+      if (drains) b.append(v8sw('drainages', 'Drainages', 'The HUC-12 drainages that reach into the county (USGS). BEAM’s cloudburst warning flags the ones where flash flooding is possible'));
       else if (county) b.append(notYet('Drainages'));
       if (gaugesL) b.append(v8sw('gauges', 'Stream gauges', 'USGS gauges near the county: flow and its trend, every 15 minutes while on. Provisional data'));
       if (firesL) b.append(v8sw('fires', 'Current fires', 'Wildfires the agencies report (NIFC), with perimeters. Not an evacuation notice'));
@@ -1391,9 +1413,10 @@ export function createNowcastView(app) {
       const go = async () => {
         list.textContent = ''; const q = inp.value.trim(); if (q.length < 2) return;
         const geo = S.geo || (await app.geo()); let res = [];
-        if (/^\d{5}$/.test(q)) { const z = geo.zcta.find(q); if (z) res = [{ name: `ZIP ${z.zip}`, region: '', lat: z.lat, lon: z.lon }]; }
+        // 1.0.3: a ZIP code only where the app forecasts (1.0.2 offered any US ZIP, then said to pick a place inside the county)
+        if (/^\d{5}$/.test(q)) { const z = geo.zcta.find(q); if (z && (!app.area || app.area.contains(z.lat, z.lon))) res = [{ name: `ZIP ${z.zip}`, region: '', lat: z.lat, lon: z.lon }]; }
         else res = app.searchPlaces(geo, q, 8);
-        if (!res.length) { list.append(mk('p', 'footnote', 'US towns and ZIP codes only for now.')); return; }
+        if (!res.length) { list.append(mk('p', 'footnote', app.area ? `No town or ZIP code by that name where ${app.area.app} forecasts.` : 'US towns and ZIP codes only for now.')); return; }   // 1.0.3: the town may be real, just outside the app's area
         for (const e of res) { const r = btn('nc-res', `${e.name}${e.region ? ', ' + e.region : ''}`); r.onclick = () => { closeSheet(); setPlace({ lat: e.lat, lon: e.lon, label: `${e.name}${e.region ? ', ' + e.region : ''}` }, 7.6); }; list.append(r); }
       };
       inp.oninput = () => { clearTimeout(inp.t); inp.t = setTimeout(go, 160); };
@@ -1421,8 +1444,8 @@ export function createNowcastView(app) {
   });
   function offerSsDownload() {
     openSheet((b) => {
-      b.append(mk('h2', 'nc-h', 'StormScope (pilot)'));
-      b.append(mk('p', null, `NVIDIA's StormScope reads the radar, the GOES satellite and its lightning mapper, and shows storms for the next 90 minutes, worked out on this phone: ${MB(app.ssSize())}, downloaded once. A pilot: not retrained, and less sure where radar can't see.`));
+      b.append(mk('h2', 'nc-h', 'StormScope'));   // 1.0.3: released wording (it said "(pilot)")
+      b.append(mk('p', null, `NVIDIA's StormScope reads the radar, the GOES satellite and its lightning mapper, and shows storms for the next 90 minutes, worked out on this phone: ${MB(app.ssSize())}, downloaded once. Not retrained for the West, and less sure where radar can't see.`));
       b.append(mk('p', 'footnote', 'Licensed by NVIDIA Corporation under the NVIDIA Open Model License. Modified for this app: quantised to 8-bit integers and run as WebGPU kernels.'));
       const d = app.ssDl(), go = btn('nc-btn', d && d.running ? `Downloading · ${Math.floor(100 * (d.pct || 0))}%` : `Download · ${MB(app.ssSize())}`);
       go.disabled = !!(d && d.running); go.onclick = () => { app.ssDownload(); closeSheet(); render(); }; b.append(go);
@@ -1501,16 +1524,19 @@ export function createNowcastView(app) {
     }, 'info');
   }
   function openAccuracy() {
+    const m = MODELS.find((x) => x.id === S.model), A = accuracyOf(S.model, m);   // 1.0.3: the model picked, not always DGMR
     openSheet((b) => {
       b.append(mk('h2', 'nc-h', 'How accurate is this?'));
-      for (const p of SKILL.intro) b.append(mk('p', null, p));
-      for (const tb of SKILL.tables) {
+      if (m) b.append(mk('p', 'nc-sub', m.long || m.name));
+      for (const p of A.intro) b.append(mk('p', null, p));
+      for (const L of A.lists) { if (!L.items.length) continue; b.append(mk('p', 'nc-sub', L.title)); const ul = mk('ul', 'nc-acc-list'); for (const t of L.items) ul.append(mk('li', null, t)); b.append(ul); }
+      for (const tb of A.tables) {
         b.append(mk('p', 'nc-sub', tb.title));
         const t = mk('table', 'nc-skill'), hr = mk('tr'); for (const c of tb.head) hr.append(mk('th', null, c)); t.append(hr);
         for (const r of tb.rows) { const tr = mk('tr'); r.forEach((c, i) => tr.append(mk(i ? 'td' : 'th', null, c))); t.append(tr); }
         b.append(t); if (tb.note) b.append(mk('p', 'footnote', tb.note));
       }
-      for (const p of SKILL.outro) b.append(mk('p', 'footnote', p));
+      for (const p of A.outro) b.append(mk('p', 'footnote', p));
     }, 'acc');
   }
 

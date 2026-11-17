@@ -125,7 +125,7 @@ export function buildSettings(body, hooks = {}, { doc = document, models = MODEL
       live = { page: 'main', paint() { for (const r of rows) { const s = statusText(statusOf(r.m.id), r.m); r.v.textContent = s.text; r.v.className = 'st-val st-k-' + s.kind; }
         if (all) { const sub = all.r.querySelector ? all.r.querySelector('.st-row-sub') : null; if (sub) sub.textContent = call(hooks.downloadAll.sub) || ''; } } };   // LANDING
       root.append(mk('p', 'st-note', 'Tap a model to read what it is good and bad at, or to download or delete it.'));
-      if (typeof hooks.fieldReport === 'function') row(group('Field test'), { go: 'report', ic: 'flag', title: 'Field report', sub: 'Share what the weather is doing where you are' });   // FIELD REPORT (fieldkit)
+      if (typeof hooks.fieldReport === 'function') row(group('Field reports'), { go: 'report', ic: 'flag', title: 'Field report', sub: 'Share what the weather is doing where you are' });   // FIELD REPORT (fieldkit)
       if (hooks.fresh) row(group('Data'), { go: 'fresh', ic: 'refresh', title: 'Keep forecasts fresh', sub: hooks.fresh.sub || '', value: call(hooks.fresh.value) || '' });   // Nov-08
       const a = group('This app');
       if (hooks.share) row(a, { go: 'share', ic: 'share', title: 'Share the app', sub: 'A code a friend scans with their camera' });   // 1.0.2
@@ -255,7 +255,7 @@ export function buildSettings(body, hooks = {}, { doc = document, models = MODEL
     },
     install() {
       const box = mk('div', 'st-install'); root.append(box);
-      if (typeof hooks.installGuide === 'function') { try { const r = hooks.installGuide(box); if (r && r.catch) r.catch(() => {}); } catch (e) { /* */ } }
+      if (typeof hooks.installGuide === 'function') { try { const r = hooks.installGuide(box, { onDone: () => back() }); if (r && r.catch) r.catch(() => {}); } catch (e) { /* */ } }   // 1.0.3: "Use it in the browser" / "Done" goes back to Settings
       else { head('Install the app'); box.append(mk('p', 'st-note', 'The install steps are not available here.')); }
     },
     about() {
